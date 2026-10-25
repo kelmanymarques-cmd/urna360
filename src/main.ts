@@ -417,9 +417,11 @@ function renderEvolucao() {
   const grade = passos.map((g) => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(g)}" y2="${y(g)}" stroke="${g === 50 ? '#3A5280' : '#22385F'}" ${g === 50 ? 'stroke-dasharray="4 4"' : ''}></line><text x="${m.l - 6}" y="${y(g) + 4}" text-anchor="end">${g.toLocaleString('pt-BR')}%</text>`).join('');
   let ticks: { v: number; t: string }[];
   if (porHora) {
-    const inicio = Math.ceil(x0 / 1_800_000) * 1_800_000;
+    const faixa = x1 - x0;
+    const passo = (faixa <= 20 * 60_000 ? 5 : faixa <= 60 * 60_000 ? 10 : faixa <= 3 * 3_600_000 ? 30 : 60) * 60_000;
+    const inicio = Math.ceil(x0 / passo) * passo;
     ticks = [];
-    for (let t = inicio; t <= x1; t += 1_800_000) {
+    for (let t = inicio; t <= x1; t += passo) {
       const d = new Date(t - 3 * 3_600_000);
       ticks.push({ v: t, t: `${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')}` });
     }
