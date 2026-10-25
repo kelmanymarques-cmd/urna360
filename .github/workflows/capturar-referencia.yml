@@ -1,0 +1,21 @@
+name: capturar-referencia
+on:
+  workflow_dispatch:
+    inputs:
+      url: { description: 'Página pública para capturar', required: true }
+permissions:
+  contents: write
+jobs:
+  capturar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npx playwright install --with-deps chromium
+      - run: node scripts/capturar.mjs "${{ inputs.url }}"
+      - run: |
+          mkdir -p /tmp/ev && cp ref-* /tmp/ev/ 2>/dev/null || true
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/ev/* . && git add -A && git commit -qm "captura de referência" && git push -q origin verificacao
