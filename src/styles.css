@@ -165,6 +165,9 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 .legenda li { display: flex; gap: 10px; align-items: center; font-size: .9rem; }
 .amostra { width: 18px; height: 18px; border-radius: 4px; flex: none; border: 1px solid #FFFFFF33; }
 .detalhe h3 { font-size: 1.2rem; }
+.detalhe-cab { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.fechar { background: none; border: 1px solid var(--linha); border-radius: 8px; color: var(--texto); font-size: 1.3rem; line-height: 1; min-width: 36px; min-height: 36px; cursor: pointer; }
+.fechar:hover { border-color: var(--texto-2); }
 .detalhe dl { display: grid; grid-template-columns: auto auto; gap: 6px 12px; margin: 10px 0 0; font-size: .92rem; }
 .detalhe dt { color: var(--texto-2); }
 .detalhe dd { margin: 0; text-align: right; font-weight: 600; }

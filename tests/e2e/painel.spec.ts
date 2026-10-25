@@ -87,6 +87,20 @@ test('em andamento: cores por liderança, neutro sem dados, detalhes e camadas',
   await page.locator('#uf-sp').focus();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('detalhe-uf')).toContainText('São Paulo');
+  // desmarcar: tocar de novo na mesma UF
+  await page.locator('#uf-sp').click();
+  await expect(page.getByTestId('detalhe-uf')).toHaveCount(0);
+  expect(await page.locator('#mapa path.sel').count()).toBe(0);
+  // desmarcar: botão fechar
+  await page.locator('#uf-sp').click();
+  await page.getByRole('button', { name: 'Fechar detalhes de São Paulo' }).click();
+  await expect(page.getByTestId('detalhe-uf')).toHaveCount(0);
+  // desmarcar: tecla Esc
+  await page.locator('#uf-pe').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('detalhe-uf')).toHaveCount(0);
+  await page.locator('#uf-pe').click();
+  await expect(page.getByTestId('detalhe-uf')).toContainText('Pernambuco');
 
   // camadas neutras independentes
   await page.getByRole('radio', { name: 'Votos brancos' }).click();

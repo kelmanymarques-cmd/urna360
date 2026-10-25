@@ -210,7 +210,8 @@ function renderDetalhe() {
   const pin = pintar(ui.camada, r, a);
   const vd = r?.votosDisponiveis;
   $('detalhe').innerHTML = `<div class="cartao" data-testid="detalhe-uf">
-    <h3>${esc(nomeUF(uf))} <span class="nota">(${uf.toUpperCase()})</span></h3>
+    <div class="detalhe-cab"><h3>${esc(nomeUF(uf))} <span class="nota">(${uf.toUpperCase()})</span></h3>
+      <button type="button" class="fechar" data-acao="desmarcar" aria-label="Fechar detalhes de ${esc(nomeUF(uf))}">×</button></div>
     <span class="chip" style="border-color:${pin.cor}">${esc(lid.estado === 'neutro' ? lid.motivo : pin.lid ? pin.resumo : pintar('lideranca', r, a).resumo)}</span>
     <dl class="num">
       <dt>Seções totalizadas</dt><dd>${pctTxt(r?.secoes.pctTotalizadas ?? a?.pctTotalizadas)}</dd>
@@ -303,7 +304,8 @@ function iniciar() {
   ($('padroes') as HTMLInputElement).checked = ui.texturas;
   montarMapa($('mapa'), {
     selecionar(uf) {
-      ui.selecionada = uf;
+      // Tocar de novo na mesma UF (ou fora do mapa) desmarca.
+      ui.selecionada = uf && uf !== ui.selecionada ? uf : null;
       renderMapa();
     },
     dica(uf, x, y) {
@@ -336,6 +338,16 @@ function iniciar() {
     const n = bs[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length];
     e.preventDefault();
     n?.click();
+  });
+  $('detalhe').addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('[data-acao="desmarcar"]')) return;
+    const uf = ui.selecionada;
+    ui.selecionada = null;
+    renderMapa();
+    if (uf) document.getElementById(`uf-${uf}`)?.focus();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && ui.selecionada) { ui.selecionada = null; renderMapa(); }
   });
   $('padroes').addEventListener('change', (e) => {
     ui.texturas = (e.target as HTMLInputElement).checked;

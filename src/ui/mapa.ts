@@ -17,7 +17,8 @@ export interface DadosMapa {
 }
 
 export interface EventosMapa {
-  selecionar: (uf: string) => void;
+  /** Recebe a UF clicada, ou null ao clicar fora das UFs. */
+  selecionar: (uf: string | null) => void;
   dica: (uf: string | null, x: number, y: number) => void;
 }
 
@@ -67,10 +68,14 @@ export function montarMapa(raiz: HTMLElement, ev: EventosMapa) {
   const ufDe = (e: Event) => (e.target as Element | null)?.closest?.('path[data-uf]')?.getAttribute('data-uf') ?? null;
   svg.addEventListener('click', (e) => {
     const uf = ufDe(e);
-    if (uf) ev.selecionar(uf);
+    ev.selecionar(uf);
   });
   svg.addEventListener('keydown', (e) => {
     const uf = ufDe(e);
+    if (e.key === 'Escape') {
+      ev.selecionar(null);
+      return;
+    }
     if (uf && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       ev.selecionar(uf);
