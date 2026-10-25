@@ -46,7 +46,8 @@ function renderTopo() {
     const como = def.motivo === 'matematico'
       ? 'O TSE indica que o resultado está matematicamente definido. A totalização final ainda não terminou.'
       : 'Totalização final concluída pelo TSE.';
-    av.push(`<div class="aviso eleito" data-testid="aviso-eleito"><strong>TSE: ${quem}</strong><span>${como}</span>
+    const parabens = def.eleito ? `<span class="parabens">Parabéns, ${esc(def.eleito.rotulo)}!</span>` : '';
+    av.push(`<div class="aviso eleito" data-testid="aviso-eleito"><strong>TSE: ${quem}</strong>${parabens}<span>${como}</span>
       <button type="button" class="botao botao-p" data-acao="hino">▶ Tocar o Hino Nacional</button></div>`);
   }
   if (r?.simulado) av.push(`<div class="aviso simulado" data-testid="aviso-simulado">Ambiente de simulação do TSE — estes números NÃO são resultados reais.</div>`);
@@ -84,10 +85,13 @@ function renderNacional() {
     .sort((a, b) => (a.d?.seq ?? 99) - (b.d?.seq ?? 99))
     .map(({ c, d }) => {
       const pct = r.votosDisponiveis ? d?.percentual ?? null : null;
+      const defCard = eleicaoDefinida(r);
       const sit = r.totalizacaoFinal && d?.situacaoOficial ? `<span class="oficial">Situação oficial (TSE): ${esc(d.situacaoOficial)}</span>` : '';
       const foto = d?.sqcand ? urlFoto(d.sqcand) : null;
       const iniciais = c.rotulo.split(' ').map((x) => x[0]).slice(0, 2).join('');
-      return `<article class="cartao cand" style="--c:${COR[c.chave]}" data-testid="cand-${c.numero}">
+      const venceu = defCard.definido && defCard.eleito?.chave === c.chave;
+      return `<article class="cartao cand${venceu ? ' vencedor' : ''}" style="--c:${COR[c.chave]}" data-testid="cand-${c.numero}">
+        ${venceu ? `<div class="selo" data-testid="selo-eleito">★ Eleito · TSE<span>Parabéns, ${esc(c.rotulo)}!</span></div>` : ''}
         <div class="cab-c">
           <span class="foto" data-iniciais="${esc(iniciais)}">${foto ? `<img src="${esc(foto)}" alt="Foto oficial de ${esc(c.rotulo)} (TSE)" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>
           <div class="ident">
@@ -346,7 +350,8 @@ function iniciar() {
     renderTabela();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && estado.proximaConsultaEm && Date.now() >= estado.proximaConsultaEm) void store.consultarAgora();
+    // Ao voltar para a página (celular desbloqueado / troca de app), consulta na hora.
+    if (document.visibilityState === 'visible') void store.consultarAgora();
   });
 
   // Foto indisponível → mostra as iniciais (mesmo tratamento para os dois candidatos).
@@ -366,7 +371,7 @@ function iniciar() {
   });
   store.assinar((e, mudou) => {
     estado = e;
-    if (mudou) { aoMudarNacional(e.nacional.dados); verificarEleito(); }
+    if (mudou) { aoMudarNacional(e.nacional.dados); verificarVirada(e.nacional.dados); verificarEleito(); }
     if (mudou || !e.consultando) renderTudo();
     else renderTopo();
   });
@@ -424,6 +429,44 @@ function aoMudarNacional(r: Resultado | null) {
   if (houveAntes) alertar();
 }
 
+// ---------- notificações: virada na liderança nacional e eleito (mesmo tratamento para os dois) ----------
+const CHAVE_LIDER = 'urna360.lider.6258';
+const CHAVE_AVISO_ELEITO = 'urna360.avisoEleito.6258';
+let ultimoLider: string | null = null;
+try { ultimoLider = localStorage.getItem(CHAVE_LIDER); } catch { /* opcional */ }
+
+function notificar(titulo: string, texto: string, tipo: 'virada' | 'eleito') {
+  const caixa = $('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${tipo}`;
+  t.setAttribute('role', 'status');
+  t.dataset.testid = `toast-${tipo}`;
+  t.innerHTML = `<strong>${esc(titulo)}</strong><span>${esc(texto)}</span><button type="button" aria-label="Fechar aviso">×</button>`;
+  t.querySelector('button')!.addEventListener('click', () => t.remove());
+  caixa.prepend(t);
+  setTimeout(() => t.remove(), tipo === 'eleito' ? 60_000 : 20_000);
+  alertar();
+  try {
+    if (alertasLigados && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, { body: texto, icon: './favicon.svg', tag: `urna360-${tipo}` });
+    }
+  } catch { /* alguns navegadores móveis só permitem via service worker */ }
+}
+
+/** Avisa quando o candidato com mais votos nominais no Brasil muda (dados oficiais parciais). */
+function verificarVirada(r: Resultado | null) {
+  const l = lideranca(r);
+  if (l.estado !== 'flavio' && l.estado !== 'lula') return;
+  if (ultimoLider && ultimoLider !== l.estado && r) {
+    const novo = CANDIDATOS.find((c) => c.chave === l.estado)!;
+    const outro = CANDIDATOS.find((c) => c.chave !== l.estado)!;
+    notificar(`Virada: ${novo.rotulo} passou à frente`,
+      `${novo.rotulo} ultrapassou ${outro.rotulo} na contagem parcial do TSE (${pctTxt(r.secoes.pctTotalizadas)} das seções). Diferença: ${num(l.diferencaVotos)} votos.`, 'virada');
+  }
+  ultimoLider = l.estado;
+  try { localStorage.setItem(CHAVE_LIDER, l.estado); } catch { /* opcional */ }
+}
+
 // ---------- Hino Nacional quando o TSE definir o resultado (mesmo hino para qualquer eleito) ----------
 const CHAVE_HINO = 'urna360.hino.6258';
 let hinoBuffer: AudioBuffer | null = null;
@@ -463,6 +506,14 @@ async function tocarHino(): Promise<boolean> {
 function verificarEleito() {
   const def = eleicaoDefinida(estado.nacional.dados);
   if (!def.definido) return;
+  let jaAvisou = false;
+  try { jaAvisou = localStorage.getItem(CHAVE_AVISO_ELEITO) === '1'; } catch { /* opcional */ }
+  if (!jaAvisou) {
+    const nome = def.eleito?.rotulo;
+    notificar(nome ? `TSE: ${nome} eleito` : 'TSE: resultado definido',
+      nome ? `Parabéns, ${nome}! ${def.motivo === 'matematico' ? 'Resultado matematicamente definido segundo o TSE.' : 'Totalização final concluída.'}` : 'O TSE indicou que o resultado está definido.', 'eleito');
+    try { localStorage.setItem(CHAVE_AVISO_ELEITO, '1'); } catch { /* opcional */ }
+  }
   let jaTocou = false;
   try { jaTocou = localStorage.getItem(CHAVE_HINO) === '1'; } catch { /* opcional */ }
   if (jaTocou || !alertasLigados) return;
@@ -487,6 +538,7 @@ function configurarAlertas() {
     try { localStorage.setItem('urna360.alertas', alertasLigados ? '1' : '0'); } catch { /* opcional */ }
     if (alertasLigados) {
       try { audio ??= new AudioContext(); void audio.resume(); void carregarHino(); } catch { audio = null; }
+      try { if ('Notification' in window && Notification.permission === 'default') void Notification.requestPermission(); } catch { /* opcional */ }
       alertar(); // demonstra o aviso
     }
     pintar();

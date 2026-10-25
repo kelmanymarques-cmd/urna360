@@ -130,6 +130,21 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 .rf-p { color: var(--texto-2); }
 .rf-p b { color: var(--amarelo); }
 
+/* Notificações e vencedor */
+.toasts { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; gap: 8px; justify-items: center;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+.toast { pointer-events: auto; position: relative; width: min(100%, 520px); display: grid; gap: 4px; padding: 12px 40px 12px 14px;
+  border-radius: 12px; border: 1px solid var(--amarelo); background: #0E1F3DF5; box-shadow: 0 10px 30px #0008; animation: entra .35s ease-out; }
+.toast strong { color: var(--amarelo); }
+.toast.eleito { border-width: 2px; background: linear-gradient(90deg, #1B2E14F5, #10264AF5); }
+.toast button { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--texto); font-size: 1.4rem; cursor: pointer; min-width: 32px; min-height: 32px; }
+@keyframes entra { from { transform: translateY(20px); opacity: 0; } }
+.parabens { font-size: 1.05rem; font-weight: 700; }
+.cand.vencedor { border-color: var(--amarelo); box-shadow: 0 0 0 2px var(--amarelo), 0 0 28px #F6C44555; }
+.selo { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; justify-content: space-between; padding: 8px 12px; border-radius: 10px;
+  background: var(--amarelo); color: #071226; font-weight: 800; letter-spacing: .02em; }
+.selo span { font-weight: 700; }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }

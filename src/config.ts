@@ -71,8 +71,8 @@ const env = (import.meta as { env?: Record<string, string | undefined> }).env ??
 export const BASE_DADOS = env.VITE_TSE_BASE ?? '/api/tse';
 export const AMBIENTE = env.VITE_TSE_AMBIENTE ?? 'oficial';
 
-/** Intervalo de consulta em segundos (mínimo 15 s para não sobrecarregar a fonte). */
-export const INTERVALO_SEGUNDOS = Math.max(15, Number(env.VITE_INTERVALO_SEGUNDOS ?? 30) || 30);
+/** Intervalo de consulta em segundos (mínimo 10 s). Cada rodada faz 2 requisições + só as UFs que mudaram; muito abaixo do limite do TSE (100 req/s por IP). O CDN do TSE guarda cada arquivo por até ~42 s; esse atraso é da fonte e nenhum painel consegue evitar. */
+export const INTERVALO_SEGUNDOS = Math.max(10, Number(env.VITE_INTERVALO_SEGUNDOS ?? 10) || 10);
 export const TIMEOUT_MS = 12_000;
 /** Dado é considerado desatualizado após este tempo sem consulta bem-sucedida. */
 export const LIMITE_DESATUALIZADO_MS = 3 * 60_000;

@@ -137,6 +137,10 @@ for (const [n, nome] of [[22, 'Flávio Bolsonaro'], [13, 'Lula']] as const) {
     await expect(page.getByTestId('aviso-eleito')).toContainText(`TSE: ${nome} eleito`);
     await expect(page.getByTestId('aviso-eleito')).toContainText('matematicamente definido');
     await expect(page.getByTestId('aviso-eleito').getByRole('button')).toHaveText('▶ Tocar o Hino Nacional');
+    await expect(page.getByTestId('aviso-eleito')).toContainText(`Parabéns, ${nome}!`);
+    await expect(page.getByTestId(`cand-${n}`).getByTestId('selo-eleito')).toContainText('Eleito · TSE');
+    await expect(page.getByTestId(`cand-${n === 22 ? 13 : 22}`).getByTestId('selo-eleito')).toHaveCount(0);
+    await expect(page.getByTestId('toast-eleito')).toContainText(`Parabéns, ${nome}!`);
     const r = await page.request.get('/hino-nacional.mp3');
     expect(r.status()).toBe(200);
     await page.getByTestId('aviso-eleito').getByRole('button').click();
@@ -144,11 +148,31 @@ for (const [n, nome] of [[22, 'Flávio Bolsonaro'], [13, 'Lula']] as const) {
   });
 }
 
+for (const [antes, n, nome, outro] of [['flavio', 13, 'Lula', 'Flávio Bolsonaro'], ['lula', 22, 'Flávio Bolsonaro', 'Lula']] as const) {
+  test(`notifica virada na liderança — ${nome} passa ${outro}`, async ({ page }) => {
+    await page.addInitScript((l) => localStorage.setItem('urna360.lider.6258', l), antes);
+    const v = n === 22 ? { flavio: 600, lula: 400 } : { flavio: 400, lula: 600 };
+    await fonte(page, () => ({ st: 10, flavio: 1, lula: 1 }), { st: 3000, ts: 10000, ...v });
+    await page.goto('/');
+    await expect(page.getByTestId('toast-virada')).toContainText(`${nome} ultrapassou ${outro}`);
+    await expect(page.getByTestId('toast-virada')).toContainText('Diferença: 200 votos');
+  });
+}
+
+test('sem virada não há notificação', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('urna360.lider.6258', 'lula'));
+  await fonte(page, () => ({ st: 10, flavio: 1, lula: 1 }), { st: 3000, ts: 10000, flavio: 400, lula: 600 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-13')).toHaveText('60,00%');
+  await expect(page.getByTestId('toast-virada')).toHaveCount(0);
+});
+
 test('sem indicação do TSE não há aviso de eleito', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 1 }), { st: 9000, ts: 10000, flavio: 900, lula: 100 });
   await page.goto('/');
   await expect(page.getByTestId('pct-22')).toHaveText('90,00%');
   await expect(page.getByTestId('aviso-eleito')).toHaveCount(0);
+  await expect(page.getByTestId('selo-eleito')).toHaveCount(0);
 });
 
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
