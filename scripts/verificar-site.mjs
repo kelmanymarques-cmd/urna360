@@ -20,6 +20,8 @@ console.log(JSON.stringify({ url, status, ufs, versaoNova: versaoNova > 0, scrip
 await p.screenshot({ path: 'site-celular.png', fullPage: false });
 await p.locator('#g-evolucao').screenshot({ path: 'site-evolucao.png' }).catch(() => {});
 await p.locator('#regioes').screenshot({ path: 'site-regioes.png' }).catch(() => {});
+await p.locator('.mapa-grade').screenshot({ path: 'site-mapa.png' }).catch(() => {});
+await p.locator('#painel-nacional').screenshot({ path: 'site-nacional.png' }).catch(() => {});
 // Gera a imagem de compartilhamento com os dados reais (sem abrir o menu do sistema).
 try {
   await p.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));
