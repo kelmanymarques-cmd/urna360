@@ -1,0 +1,16 @@
+{
+  "name": "URNA360 — Apuração 2º turno 2026",
+  "short_name": "URNA360",
+  "description": "Apuração do 2º turno presidencial com dados oficiais do TSE.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#071226",
+  "theme_color": "#071226",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

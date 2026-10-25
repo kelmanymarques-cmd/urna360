@@ -2,97 +2,85 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
-    <meta name="description" content="URNA360 — acompanhamento da apuração do 2º turno presidencial de 2026 com dados oficiais do TSE." />
     <title>URNA360 · Apuração 2º turno 2026</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <script type="module" crossorigin src="./assets/index-DBFgDPjL.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DDxOjnNS.css">
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icone-180.png" />
+    <meta name="theme-color" content="#071226" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="URNA360" />
+    <style>
+      body { margin: 0; background: #071226; color: #EEF2FA; font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+      #carregando { padding: 32px 16px; text-align: center; color: #A9B6CF; }
+      #nova-versao { position: fixed; z-index: 60; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+        font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 999px; border: 0; background: #F6C445; color: #071226; cursor: pointer; box-shadow: 0 6px 20px #0008; }
+    </style>
   </head>
   <body>
-    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
-    <header class="topo">
-      <div class="marca">
-        <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
-          <circle cx="20" cy="20" r="16" fill="none" stroke="#F6C445" stroke-width="5" stroke-dasharray="25 75.5" pathLength="100.5" transform="rotate(-90 20 20)" />
-          <circle cx="20" cy="20" r="16" fill="none" stroke="#3C7BEA" stroke-width="5" stroke-dasharray="25 75.5" stroke-dashoffset="-25.1" pathLength="100.5" transform="rotate(-90 20 20)" />
-          <circle cx="20" cy="20" r="16" fill="none" stroke="#2BB673" stroke-width="5" stroke-dasharray="25 75.5" stroke-dashoffset="-50.2" pathLength="100.5" transform="rotate(-90 20 20)" />
-          <circle cx="20" cy="20" r="16" fill="none" stroke="#F4F6FB" stroke-width="5" stroke-dasharray="25 75.5" stroke-dashoffset="-75.3" pathLength="100.5" transform="rotate(-90 20 20)" />
-        </svg>
-        <div>
-          <h1>URNA<span>360</span></h1>
-          <p class="sub">Apuração · Presidente · 2º turno · 25/10/2026</p>
-        </div>
-      </div>
-      <div class="topo-dir">
-        <div class="estado-fonte" id="estado-fonte" role="status" aria-live="polite"></div>
-        <button type="button" class="botao botao-p" id="btn-tela" aria-pressed="false" hidden>Manter tela acesa</button>
-        <button type="button" class="botao botao-p" id="btn-alerta" aria-pressed="false">Avisar novas parciais</button>
-      </div>
-    </header>
-
-    <div id="resumo-fixo" class="resumo-fixo" data-testid="resumo-fixo" hidden></div>
-    <div id="avisos" class="avisos" aria-live="polite"></div>
-    <div id="toasts" class="toasts" aria-live="assertive"></div>
-
-    <main id="conteudo" tabindex="-1">
-      <section class="bloco" aria-labelledby="t-nacional">
-        <div class="bloco-cab">
-          <h2 id="t-nacional">Brasil</h2>
-          <p class="nota">Resultados parciais não são resultado final.</p>
-        </div>
-        <div id="painel-nacional"></div>
-      </section>
-
-      <section class="bloco" aria-labelledby="t-mapa">
-        <div class="bloco-cab">
-          <h2 id="t-mapa">Mapa por unidade da Federação</h2>
-          <p class="nota">O mapa mostra cada UF separadamente e <strong>não indica o resultado nacional</strong>.</p>
-        </div>
-        <div class="camadas" role="radiogroup" aria-label="Camada do mapa" id="camadas"></div>
-        <div class="mapa-grade">
-          <div class="mapa-caixa">
-            <div id="mapa" class="mapa"></div>
-            <div id="dica" class="dica" role="tooltip" hidden></div>
-          </div>
-          <aside class="lateral">
-            <div id="legenda" class="legenda" aria-live="polite"></div>
-            <div id="detalhe" class="detalhe" aria-live="polite"></div>
-          </aside>
-        </div>
-        <div class="acoes-mapa">
-          <label class="alternar"><input type="checkbox" id="padroes" /> Texturas para diferenciar sem depender de cor</label>
-          <button type="button" class="botao" id="btn-tabela" aria-expanded="false" aria-controls="tabela-ufs">Ver dados em tabela</button>
-        </div>
-        <div id="tabela-ufs" class="tabela-caixa" hidden></div>
-      </section>
-
-      <section class="bloco" aria-labelledby="t-graficos">
-        <div class="bloco-cab">
-          <h2 id="t-graficos">Gráficos</h2>
-        </div>
-        <div class="graficos">
-          <figure class="grafico" id="g-progresso"></figure>
-          <figure class="grafico" id="g-evolucao"></figure>
-        </div>
-      </section>
-    </main>
-
-    <footer class="rodape">
-      <div>
-        <h2>Fonte e metodologia</h2>
-        <p>Dados: <strong>Tribunal Superior Eleitoral (TSE)</strong>, arquivos oficiais de divulgação de resultados (especificação EA20/EA14 de 2026), eleição 6258, cargo Presidente. Os números só aparecem quando o TSE os publica; nada é estimado ou previsto aqui.</p>
-        <ul>
-          <li>Percentual dos candidatos: valor oficial do TSE (votos do candidato sobre os votos computados para candidatos).</li>
-          <li>Brancos e nulos: percentuais sobre o total de votos. São categorias separadas e não são votos de candidatos.</li>
-          <li>Abstenção e comparecimento: sobre o eleitorado das seções já totalizadas, conforme o TSE.</li>
-          <li>Horários dos arquivos: exatamente como o TSE publica (a especificação não declara fuso; o TSE opera no horário de Brasília). "Consultado" usa o relógio do seu dispositivo.</li>
-          <li>Eleitores no exterior (ZZ) entram no total nacional, mas não aparecem no mapa.</li>
-        </ul>
-        <p><a href="https://resultados.tse.jus.br/oficial/app/index.html" rel="noopener" target="_blank">Portal de resultados do TSE</a> · <a href="https://www.tse.jus.br/eleicoes/informacoes-tecnicas-sobre-a-divulgacao-de-resultados" rel="noopener" target="_blank">Documentação técnica do TSE</a></p>
-      </div>
-      <p class="neutro">A URNA360 é independente e não tem vínculo com candidatos, partidos ou com o TSE. As cores do mapa servem só para diferenciar os candidatos. Mapa: <a href="https://github.com/VictorCazanave/svg-maps" rel="noopener" target="_blank">@svg-maps/brazil</a> (CC BY 4.0). Hino Nacional: gravação de domínio público do Coral do Exército Brasileiro (Governo Federal), via <a href="https://commons.wikimedia.org/wiki/File:Hino_Nacional_Brasileiro_(abreviado_coral)_-_Coral_do_Ex%C3%A9rcito_brasileiro.ogg" rel="noopener" target="_blank">Wikimedia Commons</a>; toca para qualquer candidato que o TSE indicar como eleito.</p>
-    </footer>
+    <p id="carregando">Carregando URNA360…</p>
+    <script>
+      /*
+       * Carregador: busca sempre a versão mais recente publicada no ramo "site" e carrega
+       * os arquivos daquele commit pelo jsDelivr (endereço imutável, sem cache velho).
+       * Os DADOS continuam vindo direto do TSE, pelo próprio app.
+       */
+      (function () {
+        var REPO = 'kelmanymarques-cmd/urna360';
+        function ultimaVersao() {
+          return fetch('https://api.github.com/repos/' + REPO + '/commits/site', { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) { return j && /^[0-9a-f]{40}$/.test(j.sha) ? j.sha : null; })
+            .catch(function () { return null; });
+        }
+        function carregar(base) {
+          return fetch(base + 'app.html', { cache: 'no-store' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+            .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var css = doc.querySelectorAll('link[rel="stylesheet"]');
+              var js = doc.querySelectorAll('script[type="module"][src]');
+              if (!js.length) throw new Error('app sem script');
+              css.forEach(function (l) {
+                var n = document.createElement('link');
+                n.rel = 'stylesheet';
+                n.href = new URL(l.getAttribute('href'), base).href;
+                document.head.appendChild(n);
+              });
+              doc.querySelectorAll('script').forEach(function (s) { s.remove(); });
+              document.body.innerHTML = doc.body.innerHTML;
+              js.forEach(function (s) {
+                var n = document.createElement('script');
+                n.type = 'module';
+                n.crossOrigin = 'anonymous';
+                n.src = new URL(s.getAttribute('src'), base).href;
+                document.body.appendChild(n);
+              });
+            });
+        }
+        var atual = null;
+        ultimaVersao().then(function (sha) {
+          atual = sha;
+          var base = sha ? 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + sha + '/' : new URL('./', location.href).href;
+          return carregar(base).catch(function () { return carregar(new URL('./', location.href).href); });
+        }).catch(function () {
+          document.getElementById('carregando').textContent = 'Não foi possível carregar o painel. Recarregue a página.';
+        });
+        // Avisa quando houver versão nova do painel (não interrompe a leitura).
+        setInterval(function () {
+          if (document.visibilityState !== 'visible' || !atual) return;
+          ultimaVersao().then(function (sha) {
+            if (!sha || sha === atual || document.getElementById('nova-versao')) return;
+            var b = document.createElement('button');
+            b.id = 'nova-versao';
+            b.type = 'button';
+            b.textContent = 'Nova versão do painel · toque para atualizar';
+            b.onclick = function () { location.reload(); };
+            document.body.appendChild(b);
+          });
+        }, 10 * 60 * 1000);
+      })();
+    </script>
   </body>
 </html>
