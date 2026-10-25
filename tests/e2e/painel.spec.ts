@@ -320,6 +320,14 @@ test('comparação 1º × 2º turno: tabela, mudança de liderança, base e orde
   await page.getByRole('button', { name: /^UF/ }).click();
   await expect(tab.locator('tbody tr').first()).toContainText('Acre');
   await semRolagemHorizontal(page);
+  // layout: cartões e tabela ocupam a largura toda (uma coluna no celular)
+  const larg = await page.evaluate(() => {
+    const c = document.getElementById('comparacao')!.getBoundingClientRect().width;
+    const t = document.querySelector('#comparacao .tabela-caixa')!.getBoundingClientRect().width;
+    return { c, t };
+  });
+  expect(larg.t).toBeGreaterThan(larg.c * 0.95);
+  await page.locator('#sec-comparacao').screenshot({ path: `test-results/comparacao-${test.info().project.name}.png` });
 });
 
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {

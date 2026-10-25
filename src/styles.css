@@ -224,7 +224,10 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 @media (max-width: 420px) { .foto { width: 64px; height: 64px; } }
 
 /* 1º × 2º turno */
-#comparacao { display: grid; gap: 12px; min-width: 0; }
+#comparacao { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+#comparacao > * { min-width: 0; }
+#comparacao .vantagem { grid-column: auto; }
+.cmp-topo .eixo { flex-wrap: wrap; }
 .cmp-topo { display: grid; gap: 6px; }
 .cmp-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 .cmp-cand { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; border-top: 4px solid var(--c); }
