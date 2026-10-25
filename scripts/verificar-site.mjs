@@ -1,0 +1,16 @@
+// Abre o site publicado num Chromium real e confirma que ele lê o TSE (uso: node scripts/verificar-site.mjs URL)
+import { chromium, devices } from 'playwright';
+const url = process.argv[2];
+const b = await chromium.launch();
+const p = await b.newPage({ ...devices['Pixel 7'] });
+const reqs = [];
+p.on('response', (r) => { if (r.url().includes('tse.jus.br')) reqs.push(`${r.status()} ${r.url()}`); });
+p.on('console', (m) => console.log('console:', m.text()));
+await p.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
+await p.waitForTimeout(8000);
+const status = await p.locator('[data-testid=status]').textContent().catch(() => null);
+const ufs = await p.locator('#mapa path[data-uf]').count();
+console.log(JSON.stringify({ url, status, ufs, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
+await p.screenshot({ path: 'site-celular.png', fullPage: false });
+await b.close();
+if (!status || status.includes('indisponíveis') || ufs !== 27 || reqs.length === 0) process.exit(1);

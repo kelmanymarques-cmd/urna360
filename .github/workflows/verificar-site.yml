@@ -1,0 +1,22 @@
+name: verificar-site
+on:
+  workflow_dispatch:
+    inputs:
+      url: { description: 'URL do site publicado', required: true }
+permissions:
+  contents: write
+jobs:
+  abrir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npx playwright install --with-deps chromium
+      - run: node scripts/verificar-site.mjs "${{ inputs.url }}" 2>&1 | tee site-verificacao.txt; exit ${PIPESTATUS[0]}
+      - if: always()
+        run: |
+          mkdir -p /tmp/ev && cp site-verificacao.txt site-celular.png /tmp/ev/ 2>/dev/null || true
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git fetch -q origin verificacao && git checkout -q verificacao && git clean -fdxq
+          cp /tmp/ev/* . && git add -A && git commit -qm "Verificação do site publicado" && git push -q origin verificacao
