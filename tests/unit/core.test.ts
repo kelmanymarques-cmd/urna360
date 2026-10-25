@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { carimbo, inteiro, pct, percentual } from '../../src/core/parse';
 import { ErroNormalizacao, normalizarAcompanhamento, normalizarResultado } from '../../src/core/normalize';
-import { lideranca, statusApuracao } from '../../src/core/calc';
+import { eleicaoDefinida, lideranca, statusApuracao } from '../../src/core/calc';
 import { CAMADAS_METRICAS, pintar } from '../../src/ui/camadas';
 import { ea14, ea20 } from '../fixtures/ea20';
 
@@ -172,5 +172,30 @@ describe('camadas neutras', () => {
     for (const id of ['brancos', 'nulos', 'abstencao'] as const) {
       expect(pintar(id, normalizarResultado(ea20({ abr: 'pe', st: 0 }), 'pe'), null).resumo).toMatch(/sem dados/);
     }
+  });
+});
+
+describe('resultado definido pelo TSE (hino para qualquer eleito)', () => {
+  const r = (o: Parameters<typeof ea20>[0]) => normalizarResultado(ea20({ st: 900, ts: 1000, flavio: 10, lula: 10, ...o }), 'br');
+  it('não dispara sem indicação oficial, mesmo com vantagem grande', () => {
+    expect(eleicaoDefinida(r({ flavio: 1000, lula: 1 })).definido).toBe(false);
+    expect(eleicaoDefinida(r({ flavio: 1, lula: 1000 })).definido).toBe(false);
+  });
+  it.each([[22, 'Flávio Bolsonaro'], [13, 'Lula']] as const)('md="e" com eleito %i → %s, tratamento idêntico', (n, nome) => {
+    const d = eleicaoDefinida(r({ md: 'e', eleito: n }));
+    expect(d).toMatchObject({ definido: true, motivo: 'matematico' });
+    expect(d.definido && d.eleito?.rotulo).toBe(nome);
+  });
+  it('totalização final com situação "Eleito"', () => {
+    const d = eleicaoDefinida(r({ tf: 's', and: 'f', eleito: 13, stEleito: true }));
+    expect(d).toMatchObject({ definido: true, motivo: 'totalizacao_final' });
+  });
+  it('md="e" sem candidato marcado: definido, mas sem nome', () => {
+    const d = eleicaoDefinida(r({ md: 'e' }));
+    expect(d.definido && d.eleito).toBeNull();
+  });
+  it('simulação ou dv="n" nunca disparam', () => {
+    expect(eleicaoDefinida(r({ md: 'e', eleito: 22, f: 's' })).definido).toBe(false);
+    expect(eleicaoDefinida(r({ md: 'e', eleito: 13, dv: 'n' })).definido).toBe(false);
   });
 });

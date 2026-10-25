@@ -63,6 +63,8 @@ h1, h2, h3 { line-height: 1.15; text-wrap: balance; margin: 0; }
 .aviso.info { border-color: #2B5FB4; background: #0E2550; }
 .aviso.alerta { border-color: #8A6420; background: #2B2110; color: #FFE2A8; }
 .aviso.erro { border-color: #8A2E2E; background: #2A1212; color: #FFD0D0; }
+.aviso.eleito { display: grid; gap: 6px; justify-items: start; border-color: var(--amarelo); background: linear-gradient(90deg, #1B2E14, #10264A); font-size: 1rem; }
+.aviso.eleito strong { font-size: 1.25rem; color: var(--amarelo); }
 .aviso.simulado { border-color: var(--amarelo); background: #3A2E08; color: #FFF0B8; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 
 main { max-width: 1200px; margin: 0 auto; display: grid; gap: 28px; padding-block: 16px 32px; }

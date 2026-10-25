@@ -1,6 +1,6 @@
 import './styles.css';
 import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, UFS, urlFoto, type UF } from './config';
-import { confirmados, lideranca, ROTULO_STATUS, statusApuracao } from './core/calc';
+import { confirmados, eleicaoDefinida, lideranca, ROTULO_STATUS, statusApuracao } from './core/calc';
 import type { Resultado } from './core/types';
 import { Store, type Estado, type Entrada, type PontoHistorico } from './data/store';
 import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
@@ -40,6 +40,15 @@ function renderTopo() {
     : `<span class="pilula" data-testid="status">Carregando dados oficiais…</span>`;
 
   const av: string[] = [];
+  const def = eleicaoDefinida(r);
+  if (def.definido) {
+    const quem = def.eleito ? `${esc(def.eleito.rotulo)} eleito` : 'resultado definido';
+    const como = def.motivo === 'matematico'
+      ? 'O TSE indica que o resultado está matematicamente definido. A totalização final ainda não terminou.'
+      : 'Totalização final concluída pelo TSE.';
+    av.push(`<div class="aviso eleito" data-testid="aviso-eleito"><strong>TSE: ${quem}</strong><span>${como}</span>
+      <button type="button" class="botao botao-p" data-acao="hino">▶ Tocar o Hino Nacional</button></div>`);
+  }
   if (r?.simulado) av.push(`<div class="aviso simulado" data-testid="aviso-simulado">Ambiente de simulação do TSE — estes números NÃO são resultados reais.</div>`);
   const erro = estado.nacional.ultimoErro;
   if (erro && r) {
@@ -348,9 +357,16 @@ function iniciar() {
   configurarTelaAcesa();
 
   configurarAlertas();
+  $('avisos').addEventListener('click', (ev) => {
+    const b = (ev.target as Element).closest<HTMLButtonElement>('[data-acao="hino"]');
+    if (!b) return;
+    if (hinoTocando) { pararHino(); b.textContent = '▶ Tocar o Hino Nacional'; return; }
+    try { audio ??= new AudioContext(); } catch { audio = null; }
+    void carregarHino().then(tocarHino).then((ok) => { b.textContent = ok ? '■ Parar o hino' : 'Não foi possível tocar o áudio'; });
+  });
   store.assinar((e, mudou) => {
     estado = e;
-    if (mudou) aoMudarNacional(e.nacional.dados);
+    if (mudou) { aoMudarNacional(e.nacional.dados); verificarEleito(); }
     if (mudou || !e.consultando) renderTudo();
     else renderTopo();
   });
@@ -408,6 +424,53 @@ function aoMudarNacional(r: Resultado | null) {
   if (houveAntes) alertar();
 }
 
+// ---------- Hino Nacional quando o TSE definir o resultado (mesmo hino para qualquer eleito) ----------
+const CHAVE_HINO = 'urna360.hino.6258';
+let hinoBuffer: AudioBuffer | null = null;
+let hinoTocando: AudioBufferSourceNode | HTMLAudioElement | null = null;
+async function carregarHino() {
+  if (hinoBuffer || !audio) return;
+  try {
+    const r = await fetch('./hino-nacional.mp3');
+    hinoBuffer = await audio.decodeAudioData(await r.arrayBuffer());
+  } catch { hinoBuffer = null; }
+}
+function pararHino() {
+  try {
+    if (hinoTocando instanceof HTMLAudioElement) hinoTocando.pause();
+    else hinoTocando?.stop();
+  } catch { /* ok */ }
+  hinoTocando = null;
+}
+async function tocarHino(): Promise<boolean> {
+  pararHino();
+  try {
+    if (audio && hinoBuffer) {
+      await audio.resume();
+      const src = audio.createBufferSource();
+      src.buffer = hinoBuffer;
+      src.connect(audio.destination);
+      src.start();
+      hinoTocando = src;
+      return true;
+    }
+    const el = new Audio('./hino-nacional.mp3');
+    await el.play();
+    hinoTocando = el;
+    return true;
+  } catch { return false; }
+}
+function verificarEleito() {
+  const def = eleicaoDefinida(estado.nacional.dados);
+  if (!def.definido) return;
+  let jaTocou = false;
+  try { jaTocou = localStorage.getItem(CHAVE_HINO) === '1'; } catch { /* opcional */ }
+  if (jaTocou || !alertasLigados) return;
+  void tocarHino().then((ok) => {
+    if (ok) { try { localStorage.setItem(CHAVE_HINO, '1'); } catch { /* opcional */ } }
+  });
+}
+
 // ---------- alerta de nova totalização (vibração + som opcional; desligado por padrão) ----------
 let alertasLigados = false;
 let audio: AudioContext | null = null;
@@ -423,7 +486,7 @@ function configurarAlertas() {
     alertasLigados = !alertasLigados;
     try { localStorage.setItem('urna360.alertas', alertasLigados ? '1' : '0'); } catch { /* opcional */ }
     if (alertasLigados) {
-      try { audio ??= new AudioContext(); void audio.resume(); } catch { audio = null; }
+      try { audio ??= new AudioContext(); void audio.resume(); void carregarHino(); } catch { audio = null; }
       alertar(); // demonstra o aviso
     }
     pintar();

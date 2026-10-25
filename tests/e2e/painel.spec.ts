@@ -130,6 +130,27 @@ test('resumo fixo, título da aba, avisos e evolução local', async ({ page }) 
   await semRolagemHorizontal(page);
 });
 
+for (const [n, nome] of [[22, 'Flávio Bolsonaro'], [13, 'Lula']] as const) {
+  test(`aviso de eleito pelo TSE com o mesmo hino — ${nome}`, async ({ page }) => {
+    await fonte(page, () => ({ st: 10, flavio: 1, lula: 1 }), { st: 9000, ts: 10000, flavio: 500, lula: 500, md: 'e', eleito: n });
+    await page.goto('/');
+    await expect(page.getByTestId('aviso-eleito')).toContainText(`TSE: ${nome} eleito`);
+    await expect(page.getByTestId('aviso-eleito')).toContainText('matematicamente definido');
+    await expect(page.getByTestId('aviso-eleito').getByRole('button')).toHaveText('▶ Tocar o Hino Nacional');
+    const r = await page.request.get('/hino-nacional.mp3');
+    expect(r.status()).toBe(200);
+    await page.getByTestId('aviso-eleito').getByRole('button').click();
+    await expect(page.getByTestId('aviso-eleito').getByRole('button')).toHaveText('■ Parar o hino');
+  });
+}
+
+test('sem indicação do TSE não há aviso de eleito', async ({ page }) => {
+  await fonte(page, () => ({ st: 10, flavio: 1, lula: 1 }), { st: 9000, ts: 10000, flavio: 900, lula: 100 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-22')).toHaveText('90,00%');
+  await expect(page.getByTestId('aviso-eleito')).toHaveCount(0);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

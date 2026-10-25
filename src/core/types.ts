@@ -17,6 +17,8 @@ export interface CandidatoResultado {
   votos: number | null;
   /** Percentual oficial (pvapn/pvap). Base: votos computados para candidatos. */
   percentual: number | null;
+  /** Flag oficial `e` do TSE: true = eleito (ou matematicamente eleito). */
+  eleitoOficial: boolean;
   /** Situação oficial (st), preenchida pelo TSE só após a totalização final. */
   situacaoOficial: string | null;
 }

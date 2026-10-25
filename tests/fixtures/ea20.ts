@@ -30,6 +30,9 @@ export interface OpcoesEA20 {
   idg?: number;
   nmuFlavio?: string;
   semCandidatos?: boolean;
+  md?: 's' | 'e' | 'n';
+  eleito?: 13 | 22;
+  stEleito?: boolean;
   extra?: Record<string, unknown>;
 }
 
@@ -53,7 +56,7 @@ export function ea20(o: OpcoesEA20 = {}) {
   const a = o.a ?? 0;
   const est = c + a;
   const cand = (n: number, nmu: string, nm: string, seq: number, vap: number) => ({
-    n, sqcand: 280000000000 + n, nm, nmu, dt: '01/01/1970', dvt: 'Válido', seq, e: 'n', st: '',
+    n, sqcand: 280000000000 + n, nm, nmu, dt: '01/01/1970', dvt: 'Válido', seq, e: o.eleito === n ? 's' : 'n', st: o.stEleito ? (o.eleito === n ? 'Eleito' : 'Não eleito') : '',
     vap: String(vap), pvap: br(p(vap, vvc)), pvapn: br(p(vap, vvc), 9),
     vs: [{ tp: 'v', sqcand: 1, nm: 'VICE', nmu: 'VICE', sgp: 'X' }], subs: [],
   });
@@ -62,7 +65,7 @@ export function ea20(o: OpcoesEA20 = {}) {
     ele: String(o.ele ?? 6258), t: String(o.t ?? 2), f: o.f ?? 'o', sup: 'n', tpabr: o.abr === 'br' || !o.abr ? 'br' : 'uf',
     cdabr: o.abr ?? 'br', dg: o.dg ?? '25/10/2026', hg: o.hg ?? '18:00:00', idg: String(o.idg ?? 1), dv: o.dv ?? 's',
     dt: o.dt ?? (st > 0 ? '25/10/2026' : ''), ht: o.ht ?? (st > 0 ? '18:00:00' : ''), tf: o.tf ?? 'n', and: o.and ?? (st > 0 ? 'p' : 'n'),
-    md: 'n', esae: 'n', mnae: [],
+    md: o.md ?? 'n', esae: 'n', mnae: [],
     carg: o.semCandidatos
       ? []
       : [{

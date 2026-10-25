@@ -57,3 +57,24 @@ export const ROTULO_STATUS: Record<StatusApuracao, string> = {
   concluida_aguardando_final: 'Apuração concluída — aguardando totalização final do TSE',
   totalizada: 'Totalizada pelo TSE',
 };
+
+export type Eleicao =
+  | { definido: false }
+  | { definido: true; motivo: 'matematico' | 'totalizacao_final'; eleito: CandidatoConfirmado | null };
+
+/**
+ * Resultado definido SEGUNDO O TSE (nunca por cálculo próprio):
+ * md="e" (matematicamente definido) ou totalização final com candidato marcado como eleito.
+ * O eleito só é nomeado se o TSE marcar exatamente um candidato confirmado (número + nome de urna).
+ */
+export function eleicaoDefinida(r: Resultado | null | undefined): Eleicao {
+  if (!r || r.simulado || r.divulgacaoAutorizada !== true) return { definido: false };
+  const marcados = CANDIDATOS.filter((c) => {
+    const d = localizarCandidato(r, c);
+    return d && (d.eleitoOficial || /^eleit/i.test(d.situacaoOficial ?? ''));
+  });
+  const eleito = marcados.length === 1 ? marcados[0]! : null;
+  if (r.definidoMatematicamente === 'eleito') return { definido: true, motivo: 'matematico', eleito };
+  if (r.totalizacaoFinal && eleito) return { definido: true, motivo: 'totalizacao_final', eleito };
+  return { definido: false };
+}

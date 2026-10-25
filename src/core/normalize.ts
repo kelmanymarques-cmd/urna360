@@ -177,6 +177,7 @@ function extrairCandidatos(raw: Obj, avisos: string[]): CandidatoResultado[] {
           seq: inteiro(cand.seq),
           votos: inteiro(cand.vap),
           percentual: percentual(cand.pvapn) ?? percentual(cand.pvap),
+          eleitoOficial: flag(cand.e) === true,
           situacaoOficial: texto(cand.st) || null,
         });
       }
