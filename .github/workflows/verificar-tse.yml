@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths: ['.github/workflows/verificar-tse.yml', 'src/core/**', 'tests/unit/real.test.ts']
 permissions:
-  contents: read
+  contents: write
 jobs:
   verificar:
     runs-on: ubuntu-latest
@@ -27,6 +28,13 @@ jobs:
           echo "=== CORS (preflight-less GET):"
           grep -i 'access-control' tests/real-data/*.headers || echo "SEM cabeçalho Access-Control-Allow-Origin"
       - name: Testes com dados reais
-        run: npx vitest run tests/unit/real.test.ts
+        run: npx vitest run tests/unit/real.test.ts 2>&1 | tee tests/real-data/resultado-testes.txt
+      - name: Publicar evidências no ramo verificacao
+        run: |
+          mkdir -p /tmp/ev && cp -r tests/real-data/. /tmp/ev/
+          date -u +%FT%TZ > /tmp/ev/consultado-em-utc.txt
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git checkout --orphan verificacao && git rm -rqf . && cp -r /tmp/ev/. . 
+          git add -A && git commit -qm "Evidências da verificação com arquivos reais do TSE" && git push -f origin verificacao
       - uses: actions/upload-artifact@v4
         with: { name: tse-real, path: tests/real-data/ }
