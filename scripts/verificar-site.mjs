@@ -7,7 +7,9 @@ const reqs = [];
 p.on('response', (r) => { if (r.url().includes('tse.jus.br')) reqs.push(`${r.status()} ${r.url()}`); });
 p.on('console', (m) => console.log('console:', m.text()));
 await p.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
-await p.waitForTimeout(8000);
+const abrir = p.getByText('Open the page');
+if (await abrir.count()) { console.log('interstício do githack: clicando em "Open the page"'); await abrir.first().click(); await p.waitForLoadState('networkidle'); }
+await p.waitForTimeout(10000);
 const status = await p.locator('[data-testid=status]').textContent().catch(() => null);
 const ufs = await p.locator('#mapa path[data-uf]').count();
 console.log(JSON.stringify({ url, status, ufs, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
