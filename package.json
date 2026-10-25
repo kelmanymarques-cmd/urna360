@@ -1,0 +1,31 @@
+{
+  "name": "urna360",
+  "version": "0.1.0",
+  "private": true,
+  "description": "URNA360 — painel de acompanhamento da apuração do 2º turno presidencial de 2026 com dados oficiais do TSE",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node server/proxy.mjs --dev & vite",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
+    "start": "node server/proxy.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:all": "npm run test && npm run build && npm run test:e2e",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@svg-maps/brazil": "2.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.15.30",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.3",
+    "vite": "7.1.12",
+    "vitest": "3.2.4"
+  }
+}

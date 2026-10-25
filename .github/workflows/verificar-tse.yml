@@ -1,0 +1,32 @@
+name: verificar-tse
+# Baixa arquivos REAIS do TSE, registra cabeçalhos (CORS, ETag) e roda os testes de validação com eles.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Baixar arquivos oficiais (3 requisições)
+        run: |
+          mkdir -p tests/real-data
+          B=https://resultados.tse.jus.br/oficial/ele2026/6258/dados
+          for f in br/br-c0001-e006258-u.json br/br-e006258-ab.json pe/pe-c0001-e006258-u.json; do
+            n=$(basename $f)
+            echo "=== $f"
+            curl -sS -m 30 -D tests/real-data/$n.headers -H 'Origin: https://kelmanymarques-cmd.github.io' -o tests/real-data/$n "$B/$f"
+            cat tests/real-data/$n.headers
+          done
+          echo "=== CORS (preflight-less GET):"
+          grep -i 'access-control' tests/real-data/*.headers || echo "SEM cabeçalho Access-Control-Allow-Origin"
+      - name: Testes com dados reais
+        run: npx vitest run tests/unit/real.test.ts
+      - uses: actions/upload-artifact@v4
+        with: { name: tse-real, path: tests/real-data/ }
