@@ -29,6 +29,12 @@ jobs:
             echo "=== Origin $o" | tee -a tests/real-data/cors-origens.txt
             curl -sS -m 30 -o /dev/null -D - -H "Origin: $o" "$B/br/br-c0001-e006258-u.json" | grep -i access-control | tee -a tests/real-data/cors-origens.txt || echo "sem ACAO" | tee -a tests/real-data/cors-origens.txt
           done
+          echo "=== Fotos (sqcand do arquivo oficial)" | tee tests/real-data/fotos.txt
+          for sq in 280002551544 280002542548; do
+            for u in "https://resultados.tse.jus.br/oficial/ele2026/6258/fotos/br/$sq.jpeg" "https://resultados.tse.jus.br/oficial/ele2026/fotos/br/$sq.jpeg"; do
+              echo "$(curl -sS -m 20 -o /tmp/f.bin -w '%{http_code} %{content_type} %{size_download}' "$u") $u" | tee -a tests/real-data/fotos.txt
+            done
+          done
           echo "=== CORS (preflight-less GET):"
           grep -i 'access-control' tests/real-data/*.headers || echo "SEM cabeçalho Access-Control-Allow-Origin"
       - name: Testes com dados reais
