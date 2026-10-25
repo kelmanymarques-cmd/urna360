@@ -1,0 +1,20 @@
+name: conferir-publicacao
+# Confere qual versão o link publicado está servindo (cabeçalhos de cache + nome do JS).
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          U=https://raw.githack.com/kelmanymarques-cmd/urna360/site/index.html
+          { echo "== $(date -u +%FT%TZ)"; curl -sS -D - -o /tmp/i.html "$U" | grep -iE 'HTTP/|cache|age|etag|last-mod|expires'; grep -o 'assets/[^"]*\.js' /tmp/i.html; } > /tmp/pub.txt
+          JS=$(grep -o 'assets/[^"]*\.js' /tmp/i.html | head -1)
+          curl -sS "https://raw.githack.com/kelmanymarques-cmd/urna360/site/$JS" | grep -c 'desmarcar' >> /tmp/pub.txt || echo 0 >> /tmp/pub.txt
+          cat /tmp/pub.txt
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/pub.txt publicacao.txt && git add -A && git commit -qm "conferir publicação" && git push -q origin verificacao
