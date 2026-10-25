@@ -210,6 +210,19 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 .sair-cheia { display: none; }
 .mapa-grade.cheia .sair-cheia { display: inline-flex; position: sticky; top: 0; z-index: 2; grid-column: 1 / -1; justify-self: end; background: var(--fundo-2); }
 
+/* Vantagem, avanço, barras e cartões */
+.tons { display: inline-flex; gap: 2px; flex: none; }
+.tons i { width: 10px; height: 18px; border-radius: 3px; display: inline-block; }
+.mapa .rot-v.av-alto, .av-alto { fill: #7FE0A8; color: #7FD1A8; }
+.mapa .rot-v.av-medio { fill: #FFFFFF; }
+.mapa .rot-v.av-baixo, .av-baixo { fill: #FFD54A; color: var(--destaque-texto); }
+.mini { display: block; height: 6px; border-radius: 99px; background: var(--trilha); overflow: hidden; margin: 2px 0; }
+.mini > i { display: block; height: 100%; background: linear-gradient(90deg, var(--azul), #9CC2FF); }
+.cand .votos b { color: var(--texto); font-size: 1.05rem; }
+.cand .votos .exato { font-size: .85rem; }
+.foto { width: 80px; height: 80px; }
+@media (max-width: 420px) { .foto { width: 64px; height: 64px; } }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }

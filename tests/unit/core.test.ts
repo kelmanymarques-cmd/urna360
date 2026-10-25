@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { carimbo, inteiro, pct, percentual } from '../../src/core/parse';
 import { ErroNormalizacao, normalizarAcompanhamento, normalizarResultado } from '../../src/core/normalize';
 import { eleicaoDefinida, lideranca, ritmo, somarRegiao, statusApuracao } from '../../src/core/calc';
-import { CAMADAS_METRICAS, pintar } from '../../src/ui/camadas';
+import { CAMADAS_METRICAS, TONS, pintar, tomVantagem } from '../../src/ui/camadas';
 import { ea14, ea20 } from '../fixtures/ea20';
 
 describe('leitura de valores do TSE', () => {
@@ -142,7 +142,8 @@ describe('liderança estadual por votos nominais', () => {
   it('verde quando Flávio Bolsonaro tem mais votos nominais', () => {
     const l = lideranca(uf({ st: 10, flavio: 101, lula: 100 }));
     expect(l).toEqual({ estado: 'flavio', diferencaVotos: 1 });
-    expect(pintar('lideranca', uf({ st: 10, flavio: 101, lula: 100 }), null).cor).toBe('#1FA35B');
+    expect(pintar('lideranca', uf({ st: 10, flavio: 101, lula: 100 }), null).cor).toBe('#A7DDBD'); // vantagem < 2 p.p. = tom mais claro
+    expect(pintar('lideranca', uf({ st: 10, flavio: 70, lula: 30 }), null).cor).toBe('#1FA35B'); // ≥ 20 p.p. = cor base
   });
   it('vermelho quando Lula tem mais votos nominais', () => {
     expect(lideranca(uf({ st: 10, flavio: 100, lula: 150 })).estado).toBe('lula');
@@ -229,5 +230,16 @@ describe('ritmo e soma por região (só dados oficiais)', () => {
     expect(t.pct.lula).toBeCloseTo(70);
     expect(t.ufsComDados).toBe(1);
     expect(t.pctTotalizadas).toBeCloseTo(25);
+  });
+});
+
+describe('tons pela vantagem', () => {
+  it('faixas fixas e iguais para os dois candidatos', () => {
+    for (const k of ['flavio', 'lula'] as const) {
+      expect(tomVantagem(k, 1)).toBe(TONS[k][0]);
+      expect(tomVantagem(k, 5)).toBe(TONS[k][1]);
+      expect(tomVantagem(k, 15)).toBe(TONS[k][2]);
+      expect(tomVantagem(k, 40)).toBe(TONS[k][3]);
+    }
   });
 });

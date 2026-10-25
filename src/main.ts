@@ -4,7 +4,7 @@ import { confirmados, eleicaoDefinida, lideranca, ritmo, ROTULO_STATUS, somarReg
 import { carimbo } from './core/parse';
 import type { Resultado } from './core/types';
 import { Store, type Estado, type Entrada, type PontoHistorico } from './data/store';
-import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
+import { CAMADAS_METRICAS, CORES_CANDIDATOS, FAIXAS_VANTAGEM, TONS, type IdCamada, pintar } from './ui/camadas';
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
 import { compartilharImagem, gerarImagemParcial } from './ui/imagem';
@@ -104,7 +104,7 @@ function renderNacional() {
         </div>
         <span class="pct num" data-vivo="pct-${c.numero}" data-testid="pct-${c.numero}">${r.votosDisponiveis ? pctTxt(pct) : TRACO}</span>
         <div class="barra" aria-hidden="true"><i style="width:${pct ?? 0}%"></i></div>
-        <span class="votos num" data-vivo="votos-${c.numero}">${r.votosDisponiveis ? `${num(d?.votos)} votos` : 'Aguardando votos oficiais'}</span>
+        <span class="votos num" data-vivo="votos-${c.numero}">${r.votosDisponiveis ? `<b>${milhoes(d?.votos)}</b> <span class="exato">(${num(d?.votos)})</span>` : 'Aguardando votos oficiais'}</span>
         ${!d ? '<span class="nota">Candidato não localizado no arquivo oficial.</span>' : ''}${sit}
       </article>`;
     })
@@ -112,8 +112,8 @@ function renderNacional() {
 
   const v = r.votos;
   const e = r.eleitorado;
-  const ind = (rotulo: string, valor: string, desc: string, id: string) =>
-    `<div class="cartao ind" data-testid="ind-${id}"><span class="rotulo">${rotulo}</span><span class="v num">${valor}</span><span class="d">${desc}</span></div>`;
+  const ind = (rotulo: string, valor: string, desc: string, id: string, pctBarra?: number | null) =>
+    `<div class="cartao ind" data-testid="ind-${id}"><span class="rotulo">${rotulo}</span><span class="v num">${valor}</span>${pctBarra != null ? `<span class="mini" aria-hidden="true"><i style="width:${Math.min(100, (pctBarra / 25) * 100)}%"></i></span>` : ''}<span class="d">${desc}</span></div>`;
   const tot = r.secoes;
   renderComDestaque(alvo, `<div class="nacional">
     <div class="cartao progresso">
@@ -130,10 +130,10 @@ function renderNacional() {
     ${textoVantagem(r, 'nacional')}
     <div class="indicadores">
       ${ind('Votos válidos', num(v.validos), 'Votos nominais dos candidatos', 'validos')}
-      ${ind('Brancos', r.votosDisponiveis ? `${num(v.brancos)} · ${pctTxt(v.pctBrancos)}` : TRACO, '% sobre o total de votos', 'brancos')}
-      ${ind('Nulos', r.votosDisponiveis ? `${num(v.nulos)} · ${pctTxt(v.pctNulos)}` : TRACO, '% sobre o total de votos (inclui nulos técnicos)', 'nulos')}
+      ${ind('Brancos', r.votosDisponiveis ? `${num(v.brancos)} · ${pctTxt(v.pctBrancos)}` : TRACO, '% sobre o total de votos · barra: 0 a 25%', 'brancos', r.votosDisponiveis ? v.pctBrancos : null)}
+      ${ind('Nulos', r.votosDisponiveis ? `${num(v.nulos)} · ${pctTxt(v.pctNulos)}` : TRACO, '% sobre o total de votos (inclui nulos técnicos) · barra: 0 a 25%', 'nulos', r.votosDisponiveis ? v.pctNulos : null)}
       ${ind('Comparecimento', e.comparecimento !== null ? `${num(e.comparecimento)} · ${pctTxt(e.pctComparecimento)}` : TRACO, '% sobre o eleitorado das seções totalizadas', 'comparecimento')}
-      ${ind('Abstenção', e.abstencao !== null ? `${num(e.abstencao)} · ${pctTxt(e.pctAbstencao)}` : TRACO, '% sobre o eleitorado das seções totalizadas', 'abstencao')}
+      ${ind('Abstenção', e.abstencao !== null ? `${num(e.abstencao)} · ${pctTxt(e.pctAbstencao)}` : TRACO, '% sobre o eleitorado das seções totalizadas · barra: 0 a 25%', 'abstencao', e.pctAbstencao)}
     </div>
     <div class="carimbos">
       <span>Arquivo gerado pelo TSE: <b class="num">${esc(r.geradoEm?.texto ?? TRACO)}</b></span>
@@ -151,8 +151,15 @@ function textoVantagem(r: Resultado | null, onde: 'nacional' | 'uf'): string {
   const nome = CANDIDATOS.find((c) => c.chave === l.estado)!.rotulo;
   const txt = `${esc(nome)} tem <b class="num">${num(l.diferencaVotos)}</b> votos a mais`;
   return onde === 'nacional'
-    ? `<p class="vantagem" data-vivo="vantagem" data-testid="vantagem">${txt} até agora <span class="nota">(apuração parcial — não é resultado final)</span></p>`
+    ? `<p class="vantagem" data-vivo="vantagem" data-testid="vantagem">${txt} até agora${r?.eleitorado.emSecoesNaoTotalizadas ? ` · ainda há <b class="num">${milhoes(r.eleitorado.emSecoesNaoTotalizadas, 'eleitores')}</b> em seções não totalizadas` : ''} <span class="nota">(apuração parcial — não é resultado final)</span></p>`
     : txt;
+}
+
+function milhoes(n: number | null | undefined, unidade = 'votos'): string {
+  if (n == null) return TRACO;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} milhões de ${unidade}`;
+  if (n >= 1_000) return `${(n / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} mil ${unidade}`;
+  return `${num(n)} ${unidade}`;
 }
 
 /** Destaca brevemente só os valores que realmente mudaram desde a renderização anterior. */
@@ -185,11 +192,11 @@ function renderLegenda() {
     for (const uf of UFS) contagem[lideranca(resUF(uf)).estado]++;
     $('legenda').innerHTML = `<h3>Liderança por votos nominais</h3>
       <ul>
-        <li><span class="amostra" style="background:${CORES_CANDIDATOS.flavio}"></span>Flávio Bolsonaro com mais votos <span class="num nota">(${contagem.flavio} UFs)</span></li>
-        <li><span class="amostra" style="background:${CORES_CANDIDATOS.lula}"></span>Lula com mais votos <span class="num nota">(${contagem.lula} UFs)</span></li>
+        <li><span class="tons">${TONS.flavio.map((t) => `<i style="background:${t}"></i>`).join('')}</span>Flávio Bolsonaro com mais votos <span class="num nota">(${contagem.flavio} UFs)</span></li>
+        <li><span class="tons">${TONS.lula.map((t) => `<i style="background:${t}"></i>`).join('')}</span>Lula com mais votos <span class="num nota">(${contagem.lula} UFs)</span></li>
         <li><span class="amostra" style="background:${CORES_CANDIDATOS.empate}"></span>Empate <span class="num nota">(${contagem.empate})</span></li>
         <li><span class="amostra" style="background:${CORES_CANDIDATOS.neutro}"></span>Neutro — dados insuficientes <span class="num nota">(${contagem.neutro})</span></li>
-      </ul>${nota}<p class="nota">Contagem parcial de cada UF; não representa o resultado nacional.</p>`;
+      </ul><p class="nota">Tom mais forte = vantagem maior (${FAIXAS_VANTAGEM.map((f) => f.rotulo).join(' · ')}). Número em cada estado = % de seções totalizadas: <span class="av-alto">≥ 90%</span>, <span class="av-medio">50–90%</span>, <span class="av-baixo">&lt; 50%</span>.</p>${nota}<p class="nota">Contagem parcial de cada UF; não representa o resultado nacional.</p>`;
     return;
   }
   const c = CAMADAS_METRICAS.find((x) => x.id === ui.camada)!;
@@ -390,7 +397,17 @@ function historicoCombinado(): PontoT[] {
 function textoRitmo(): string {
   const r = ritmo(historicoCombinado().map((p) => ({ ms: p.ms, pst: p.pctTotalizadas })));
   if (!r) return '';
-  return `<span class="falta num" data-testid="ritmo">Ritmo: ${r.pp >= 0 ? '+' : ''}${r.pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p. de seções totalizadas nos últimos ${r.minutos} min.</span>`;
+  const h = historicoCombinado();
+  const ult = h[h.length - 1];
+  let eta = '';
+  if (ult && r.pp > 0 && ult.pctTotalizadas < 99.9) {
+    const min = ((100 - ult.pctTotalizadas) / r.pp) * r.minutos;
+    if (min <= 6 * 60) {
+      const d = new Date(ult.ms + min * 60_000 - 3 * 3_600_000);
+      eta = ` <span data-testid="eta">Estimativa pelo ritmo atual: ≈ 100% por volta das ${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')} (o ritmo costuma cair no fim; não é dado do TSE).</span>`;
+    }
+  }
+  return `<span class="falta num" data-testid="ritmo">Ritmo: ${r.pp >= 0 ? '+' : ''}${r.pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p. de seções totalizadas nos últimos ${r.minutos} min.${eta}</span>`;
 }
 
 let eixoEvolucao: 'horario' | 'urnas' = 'horario';

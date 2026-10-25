@@ -116,9 +116,12 @@ export function pintarMapa(raiz: HTMLElement, d: DadosMapa) {
     p.classList.toggle('sel', d.selecionada === uf);
     const v = raiz.querySelector(`[data-rot="${uf}"] .rot-v`);
     if (v) {
-      const c = CAMADAS_METRICAS.find((x) => x.id === d.camada);
-      const val = c ? c.valor(d.resultado(uf), d.acomp(uf)) : null;
+      const c = CAMADAS_METRICAS.find((x) => x.id === (d.camada === 'lideranca' ? 'totalizacao' : d.camada))!;
+      const val = c.valor(d.resultado(uf), d.acomp(uf));
       v.textContent = val === null ? '' : `${val.toLocaleString('pt-BR', { maximumFractionDigits: val < 10 ? 1 : 0 })}%`;
+      // Na liderança, o número é o % de seções totalizadas: verde ≥ 90%, branco 50–90%, amarelo < 50%.
+      const cls = d.camada === 'lideranca' && val !== null ? (val >= 90 ? 'av-alto' : val >= 50 ? 'av-medio' : 'av-baixo') : '';
+      v.setAttribute('class', `rot-v ${cls}`.trim());
     }
     const tex = raiz.querySelector<SVGPathElement>(`[data-tex="${uf}"]`);
     if (tex) tex.setAttribute('fill', d.texturas && pin.padrao ? `url(#tx-${pin.padrao})` : 'none');

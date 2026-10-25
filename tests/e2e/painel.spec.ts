@@ -279,6 +279,8 @@ test('evolução desde a coleta, ritmo, viradas, regiões, rótulos no mapa e te
   await expect(page.getByTestId('grafico-evolucao').locator('polyline')).toHaveCount(2);
   await expect(page.getByTestId('grafico-evolucao')).toContainText('virada 19:20');
   await expect(page.getByTestId('ritmo')).toContainText('+10 p.p.');
+  await expect(page.getByTestId('eta')).toContainText('Estimativa pelo ritmo atual');
+  await expect(page.locator('.ind .mini')).toHaveCount(2); // brancos e nulos; abstenção sem dado neste cenário fica sem barra
   await page.getByRole('radio', { name: '% de urnas' }).click();
   await expect(page.getByRole('radio', { name: '% de urnas' })).toHaveAttribute('aria-checked', 'true');
   // regiões: Nordeste soma PE+BA+CE (Lula) e demais (Flávio)
@@ -293,7 +295,7 @@ test('evolução desde a coleta, ritmo, viradas, regiões, rótulos no mapa e te
   const rot = page.locator('#mapa [data-rot="pe"] .rot-v');
   if (await rot.count()) await expect(rot).toHaveText('50%');
   await page.getByRole('radio', { name: 'Liderança nominal' }).click();
-  if (await rot.count()) await expect(rot).toHaveText('');
+  if (await rot.count()) { await expect(rot).toHaveText('50%'); await expect(rot).toHaveClass(/av-medio/); }
   // tela cheia (com botão para sair dentro dela)
   await page.getByRole('button', { name: 'Mapa em tela cheia' }).click();
   await expect(page.locator('.mapa-grade')).toHaveClass(/cheia/);

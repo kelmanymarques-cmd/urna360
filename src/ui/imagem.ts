@@ -6,7 +6,7 @@ import brasil from '@svg-maps/brazil';
 import { CANDIDATOS, UFS, urlFoto } from '../config';
 import { confirmados, eleicaoDefinida, lideranca } from '../core/calc';
 import type { Resultado } from '../core/types';
-import { CORES_CANDIDATOS } from './camadas';
+import { CORES_CANDIDATOS, pintar } from './camadas';
 import { num, pctTxt } from './format';
 
 const W = 1080;
@@ -156,7 +156,7 @@ export async function gerarImagemParcial(d: DadosImagem): Promise<Blob> {
     const lid = lideranca(d.resultadoUF(l.id));
     contagem[lid.estado]++;
     const p = new Path2D(l.path);
-    ctx.fillStyle = CORES_CANDIDATOS[lid.estado];
+    ctx.fillStyle = pintar('lideranca', d.resultadoUF(l.id), null).cor;
     ctx.fill(p);
     ctx.stroke(p);
   }
@@ -166,7 +166,7 @@ export async function gerarImagemParcial(d: DadosImagem): Promise<Blob> {
   texto(ctx, 'Mais votos por estado', lx, ly, 30, '#F4F6FB', 700);
   ly += 20;
   const itens: [string, string, number][] = [
-    [CORES_CANDIDATOS.flavio, 'Flávio Bolsonaro', contagem.flavio],
+    [CORES_CANDIDATOS.flavio, 'Flávio Bolsonaro', contagem.flavio], // tom mais forte = vantagem maior
     [CORES_CANDIDATOS.lula, 'Lula', contagem.lula],
     [CORES_CANDIDATOS.empate, 'Empate', contagem.empate],
     [CORES_CANDIDATOS.neutro, 'Sem dados', contagem.neutro],

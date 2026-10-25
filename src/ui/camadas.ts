@@ -17,6 +17,32 @@ export const CORES_CANDIDATOS = {
   neutro: '#24314F',
 } as const;
 
+/**
+ * Tons por vantagem (diferença em pontos percentuais entre os dois, só votos oficiais).
+ * Faixas fixas: <2 p.p., 2–10, 10–20, ≥20. O tom mais forte é a cor base de cada candidato.
+ */
+export const FAIXAS_VANTAGEM = [
+  { min: 0, rotulo: 'até 2 p.p.' },
+  { min: 2, rotulo: '2 a 10 p.p.' },
+  { min: 10, rotulo: '10 a 20 p.p.' },
+  { min: 20, rotulo: '20 p.p. ou mais' },
+] as const;
+export const TONS: Record<'flavio' | 'lula', readonly string[]> = {
+  flavio: ['#A7DDBD', '#63C48F', '#34AE6D', CORES_CANDIDATOS.flavio],
+  lula: ['#F2B1B1', '#E97878', '#DF4F4F', CORES_CANDIDATOS.lula],
+};
+export function vantagemPP(r: Resultado | null): number | null {
+  const l = lideranca(r);
+  if ((l.estado !== 'flavio' && l.estado !== 'lula') || !r) return null;
+  const c = r.candidatos.filter((x) => x.numero === 22 || x.numero === 13).reduce((s, x) => s + (x.votos ?? 0), 0);
+  return c > 0 ? (l.diferencaVotos / c) * 100 : null;
+}
+export function tomVantagem(chave: 'flavio' | 'lula', pp: number | null): string {
+  let i = 0;
+  FAIXAS_VANTAGEM.forEach((f, k) => { if ((pp ?? 0) >= f.min) i = k; });
+  return TONS[chave][i]!;
+}
+
 export interface Faixa {
   min: number;
   max: number | null;
@@ -100,9 +126,12 @@ export function pintar(camada: IdCamada, r: Resultado | null, acomp: Acompanhame
     const lid = lideranca(r);
     switch (lid.estado) {
       case 'flavio':
-        return { cor: CORES_CANDIDATOS.flavio, padrao: 'flavio', resumo: 'Flávio Bolsonaro com mais votos nominais (parcial)', lid };
-      case 'lula':
-        return { cor: CORES_CANDIDATOS.lula, padrao: 'lula', resumo: 'Lula com mais votos nominais (parcial)', lid };
+      case 'lula': {
+        const pp = vantagemPP(r);
+        const nome = lid.estado === 'flavio' ? 'Flávio Bolsonaro' : 'Lula';
+        const vant = pp === null ? '' : ` — vantagem de ${pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.`;
+        return { cor: tomVantagem(lid.estado, pp), padrao: lid.estado, resumo: `${nome} com mais votos nominais (parcial)${vant}`, lid };
+      }
       case 'empate':
         return { cor: CORES_CANDIDATOS.empate, padrao: null, resumo: 'Empate em votos nominais', lid };
       default:
