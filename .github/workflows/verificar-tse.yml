@@ -25,6 +25,10 @@ jobs:
             curl -sS -m 30 -D tests/real-data/$n.headers -H 'Origin: https://kelmanymarques-cmd.github.io' -o tests/real-data/$n "$B/$f"
             cat tests/real-data/$n.headers
           done
+          for o in https://rawcdn.githack.com https://raw.githack.com https://exemplo-qualquer.com; do
+            echo "=== Origin $o" | tee -a tests/real-data/cors-origens.txt
+            curl -sS -m 30 -o /dev/null -D - -H "Origin: $o" "$B/br/br-c0001-e006258-u.json" | grep -i access-control | tee -a tests/real-data/cors-origens.txt || echo "sem ACAO" | tee -a tests/real-data/cors-origens.txt
+          done
           echo "=== CORS (preflight-less GET):"
           grep -i 'access-control' tests/real-data/*.headers || echo "SEM cabeçalho Access-Control-Allow-Origin"
       - name: Testes com dados reais
