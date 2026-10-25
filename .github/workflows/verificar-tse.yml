@@ -34,7 +34,7 @@ jobs:
           mkdir -p /tmp/ev && cp -r tests/real-data/. /tmp/ev/
           date -u +%FT%TZ > /tmp/ev/consultado-em-utc.txt
           git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
-          git checkout --orphan verificacao && git rm -rqf . && cp -r /tmp/ev/. . 
+          git checkout --orphan verificacao && git rm -rqf . && git clean -fdxq && cp -r /tmp/ev/. .
           git add -A && git commit -qm "Evidências da verificação com arquivos reais do TSE" && git push -f origin verificacao
       - uses: actions/upload-artifact@v4
         with: { name: tse-real, path: tests/real-data/ }
