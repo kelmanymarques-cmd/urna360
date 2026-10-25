@@ -12,8 +12,8 @@
     <meta name="theme-color" content="#071226" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="URNA360" />
-    <script type="module" crossorigin src="./assets/index-7ZEyPJWm.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BDEpSsUi.css">
+    <script type="module" crossorigin src="./assets/index-Dzn0ZEPG.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CSJqeo3C.css">
   </head>
   <body>
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
@@ -59,6 +59,7 @@
         </div>
         <div class="camadas" role="radiogroup" aria-label="Camada do mapa" id="camadas"></div>
         <div class="mapa-grade">
+          <button type="button" class="botao sair-cheia" id="btn-sair-cheia">Sair da tela cheia</button>
           <div class="mapa-caixa">
             <div id="mapa" class="mapa"></div>
             <div id="dica" class="dica" role="tooltip" hidden></div>
@@ -74,8 +75,10 @@
         </div>
         <div class="acoes-mapa">
           <label class="alternar"><input type="checkbox" id="padroes" /> Texturas para diferenciar sem depender de cor</label>
+          <button type="button" class="botao" id="btn-tela-cheia">Mapa em tela cheia</button>
           <button type="button" class="botao" id="btn-tabela" aria-expanded="false" aria-controls="tabela-ufs">Ver dados em tabela</button>
         </div>
+        <div id="regioes" class="tabela-caixa"></div>
         <div id="tabela-ufs" class="tabela-caixa" hidden></div>
       </section>
 
