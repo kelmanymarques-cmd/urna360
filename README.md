@@ -13,6 +13,7 @@ Painel responsivo para acompanhar a apuração do **2º turno presidencial de 25
 | Cargo | `c0001` (Presidente) | EA20 |
 | Arquivo nacional | `/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json` | **lido**: `ele=6258`, `t=2`, `f=o`, `and=n`, `dv=s`, `dg/hg=24/10/2026 19:19:13`, `ts=499248`, `st=0`, `te=158745502` |
 | Candidatos | `n=22` `nmu="FLAVIO BOLSONARO"` (PL); `n=13` `nmu="LULA"` (PT) | arquivo real |
+| Fotos | `/oficial/ele2026/6258/fotos/br/<sqcand>.jpeg` → HTTP 200 `image/jpeg` para 280002551544 e 280002542548 | Action `verificar-tse` (`fotos.txt` no ramo `verificacao`) |
 | Acompanhamento | `/oficial/ele2026/6258/dados/br/br-e006258-ab.json` com 28 UFs (27 + `zz` exterior) + `br` | arquivo real (estrutura de chaves) |
 | Limites | 100 req/s por IP; excesso → bloqueio de 10 min; muitos 404 → bloqueio; ETag/Last-Modified aceitos | documentação |
 | Atualização | sem cadência fixa ("conforme a evolução da totalização") | documentação |
@@ -68,6 +69,11 @@ Variáveis: `PORT`, `TSE_ORIGEM`, `CACHE_TTL_MS`, `HISTORICO_ARQUIVO` (servidor)
 - Assinaturas JWS dos arquivos (manual do TSE) ainda não são verificadas.
 - Comportamento real durante a apuração (17h em diante): comparar amostras com o portal do TSE.
 - Fuso dos horários não declarado na especificação.
+
+## Link publicado (celular)
+Build estático no ramo `site`, servido por githack (o Pages não pôde ser ativado por esta sessão):
+https://rawcdn.githack.com/kelmanymarques-cmd/urna360/5885a93569ff9aafc18557fc5f371f0f058ab9eb/index.html
+Verificado pela Action `verificar-site` (Chromium/Pixel 7): 27 UFs, 32 respostas HTTP 200 do TSE, fotos e vices carregados.
 
 ## Deploy
 - **Com servidor (recomendado):** qualquer host Node 20+ (Render, Railway, Fly, VPS): `npm ci && npm run build && npm start`, atrás de HTTPS. O servidor já envia CSP e outros cabeçalhos de segurança.
