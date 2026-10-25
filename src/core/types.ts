@@ -7,6 +7,10 @@ export interface CandidatoResultado {
   nomeUrna: string;
   nome: string | null;
   partido: string | null;
+  /** Código único do candidato (sqcand), usado pelo TSE para a foto. */
+  sqcand: number | null;
+  /** Nome de urna do vice (vs[].tp = "v"). */
+  vice: string | null;
   /** Sequência de ordenação publicada pelo TSE. */
   seq: number | null;
   /** Votos apurados (vap). null quando a divulgação ainda não traz votos válidos. */

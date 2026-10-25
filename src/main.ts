@@ -1,5 +1,5 @@
 import './styles.css';
-import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, UFS, type UF } from './config';
+import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, UFS, urlFoto, type UF } from './config';
 import { confirmados, lideranca, ROTULO_STATUS, statusApuracao } from './core/calc';
 import type { Resultado } from './core/types';
 import { Store, type Estado, type Entrada } from './data/store';
@@ -71,11 +71,19 @@ function renderNacional() {
     .map(({ c, d }) => {
       const pct = r.votosDisponiveis ? d?.percentual ?? null : null;
       const sit = r.totalizacaoFinal && d?.situacaoOficial ? `<span class="oficial">Situação oficial (TSE): ${esc(d.situacaoOficial)}</span>` : '';
+      const foto = d?.sqcand ? urlFoto(d.sqcand) : null;
+      const iniciais = c.rotulo.split(' ').map((x) => x[0]).slice(0, 2).join('');
       return `<article class="cartao cand" style="--c:${COR[c.chave]}" data-testid="cand-${c.numero}">
-        <div class="topo-c"><span class="nome">${esc(c.rotulo)}</span><span class="numero">${c.numero}${d?.partido ? ` · ${esc(d.partido)}` : ''}</span></div>
-        <span class="pct num" data-testid="pct-${c.numero}">${r.votosDisponiveis ? pctTxt(pct) : TRACO}</span>
+        <div class="cab-c">
+          <span class="foto" data-iniciais="${esc(iniciais)}">${foto ? `<img src="${esc(foto)}" alt="Foto oficial de ${esc(c.rotulo)} (TSE)" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}</span>
+          <div class="ident">
+            <div class="topo-c"><span class="nome">${esc(c.rotulo)}</span><span class="numero">${c.numero}${d?.partido ? ` · ${esc(d.partido)}` : ''}</span></div>
+            ${d?.vice ? `<span class="vice" data-testid="vice-${c.numero}">Vice: ${esc(d.vice)}</span>` : ''}
+          </div>
+        </div>
+        <span class="pct num" data-vivo="pct-${c.numero}" data-testid="pct-${c.numero}">${r.votosDisponiveis ? pctTxt(pct) : TRACO}</span>
         <div class="barra" aria-hidden="true"><i style="width:${pct ?? 0}%"></i></div>
-        <span class="votos num">${r.votosDisponiveis ? `${num(d?.votos)} votos` : 'Aguardando votos oficiais'}</span>
+        <span class="votos num" data-vivo="votos-${c.numero}">${r.votosDisponiveis ? `${num(d?.votos)} votos` : 'Aguardando votos oficiais'}</span>
         ${!d ? '<span class="nota">Candidato não localizado no arquivo oficial.</span>' : ''}${sit}
       </article>`;
     })
@@ -86,15 +94,16 @@ function renderNacional() {
   const ind = (rotulo: string, valor: string, desc: string, id: string) =>
     `<div class="cartao ind" data-testid="ind-${id}"><span class="rotulo">${rotulo}</span><span class="v num">${valor}</span><span class="d">${desc}</span></div>`;
   const tot = r.secoes;
-  alvo.innerHTML = `<div class="nacional">
+  renderComDestaque(alvo, `<div class="nacional">
     <div class="cartao progresso">
       <div class="linha1"><span class="rotulo">Urnas (seções) totalizadas</span><span class="rotulo">${esc(ROTULO_STATUS[st])}</span></div>
-      <span class="grande num" data-testid="pct-totalizadas">${pctTxt(tot.pctTotalizadas)}</span>
+      <span class="grande num" data-vivo="pct-totalizadas" data-testid="pct-totalizadas">${pctTxt(tot.pctTotalizadas)}</span>
       <div class="barra" role="progressbar" aria-label="Seções totalizadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${(tot.pctTotalizadas ?? 0).toFixed(2)}"><i style="width:${tot.pctTotalizadas ?? 0}%"></i></div>
       <span class="nota num">${num(tot.totalizadas)} de ${num(tot.total)} seções · eleitorado total ${num(e.total)}</span>
       ${r.definidoMatematicamente === 'eleito' && !r.totalizacaoFinal ? '<span class="chip">TSE informa: resultado matematicamente definido</span>' : ''}
     </div>
     <div class="cands">${cards}</div>
+    ${textoVantagem(r, 'nacional')}
     <div class="indicadores">
       ${ind('Votos válidos', num(v.validos), 'Votos nominais dos candidatos', 'validos')}
       ${ind('Brancos', r.votosDisponiveis ? `${num(v.brancos)} · ${pctTxt(v.pctBrancos)}` : TRACO, '% sobre o total de votos', 'brancos')}
@@ -107,7 +116,31 @@ function renderNacional() {
       <span>Totalização: <b class="num">${esc(r.totalizadoEm?.texto ?? 'ainda não iniciada')}</b></span>
       <span>Consultado (seu relógio): <b class="num">${dataHora(ent.consultadoEm)}</b></span>
     </div>
-  </div>`;
+  </div>`);
+}
+
+/** Diferença oficial de votos nominais entre os dois candidatos (sem projeção). */
+function textoVantagem(r: Resultado | null, onde: 'nacional' | 'uf'): string {
+  const l = lideranca(r);
+  if (l.estado === 'empate') return onde === 'nacional' ? '<p class="vantagem" data-vivo="vantagem" data-testid="vantagem">Empate em votos nominais (parcial)</p>' : 'Empate';
+  if (l.estado !== 'flavio' && l.estado !== 'lula') return onde === 'nacional' ? '' : TRACO;
+  const nome = CANDIDATOS.find((c) => c.chave === l.estado)!.rotulo;
+  const txt = `${esc(nome)} tem <b class="num">${num(l.diferencaVotos)}</b> votos a mais`;
+  return onde === 'nacional'
+    ? `<p class="vantagem" data-vivo="vantagem" data-testid="vantagem">${txt} até agora <span class="nota">(apuração parcial — não é resultado final)</span></p>`
+    : txt;
+}
+
+/** Destaca brevemente só os valores que realmente mudaram desde a renderização anterior. */
+function renderComDestaque(alvo: HTMLElement, html: string) {
+  const antes = new Map<string, string>();
+  for (const el of alvo.querySelectorAll<HTMLElement>('[data-vivo]')) antes.set(el.dataset.vivo!, el.textContent ?? '');
+  alvo.innerHTML = html;
+  if (!antes.size) return;
+  for (const el of alvo.querySelectorAll<HTMLElement>('[data-vivo]')) {
+    const v = antes.get(el.dataset.vivo!);
+    if (v !== undefined && v !== el.textContent) el.classList.add('mudou');
+  }
 }
 
 // ---------- mapa ----------
@@ -165,6 +198,7 @@ function renderDetalhe() {
       <dt>Seções totalizadas</dt><dd>${pctTxt(r?.secoes.pctTotalizadas ?? a?.pctTotalizadas)}</dd>
       <dt>Flávio Bolsonaro (22)</dt><dd>${vd ? `${num(flavio?.votos)} · ${pctTxt(flavio?.percentual)}` : TRACO}</dd>
       <dt>Lula (13)</dt><dd>${vd ? `${num(lula?.votos)} · ${pctTxt(lula?.percentual)}` : TRACO}</dd>
+      <dt>Diferença</dt><dd data-testid="vantagem-uf">${textoVantagem(r, 'uf')}</dd>
       <dt>Brancos</dt><dd>${vd ? `${num(r?.votos.brancos)} · ${pctTxt(r?.votos.pctBrancos)}` : TRACO}</dd>
       <dt>Nulos</dt><dd>${vd ? `${num(r?.votos.nulos)} · ${pctTxt(r?.votos.pctNulos)}` : TRACO}</dd>
       <dt>Abstenção</dt><dd>${pctTxt(r?.eleitorado.pctAbstencao)}</dd>
@@ -299,6 +333,13 @@ function iniciar() {
     if (document.visibilityState === 'visible' && estado.proximaConsultaEm && Date.now() >= estado.proximaConsultaEm) void store.consultarAgora();
   });
 
+  // Foto indisponível → mostra as iniciais (mesmo tratamento para os dois candidatos).
+  document.addEventListener('error', (e) => {
+    const t = e.target as HTMLElement;
+    if (t instanceof HTMLImageElement && t.parentElement?.classList.contains('foto')) t.remove();
+  }, true);
+  configurarTelaAcesa();
+
   store.assinar((e, mudou) => {
     estado = e;
     if (mudou || !e.consultando) renderTudo();
@@ -308,6 +349,34 @@ function iniciar() {
   store.iniciar();
   // Reavalia o aviso de "desatualizado" mesmo sem novas respostas.
   setInterval(renderTopo, 30_000);
+}
+
+function configurarTelaAcesa() {
+  const btn = $<HTMLButtonElement>('btn-tela');
+  const wl = (navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void>; addEventListener: (ev: string, fn: () => void) => void }> } }).wakeLock;
+  if (!btn) return;
+  if (!wl) { btn.hidden = true; return; }
+  let trava: { release: () => Promise<void>; addEventListener: (ev: string, fn: () => void) => void } | null = null;
+  let querAcesa = false;
+  const pintarBtn = () => {
+    btn.setAttribute('aria-pressed', String(!!trava));
+    btn.textContent = trava ? 'Tela acesa ✓' : 'Manter tela acesa';
+  };
+  const pedir = async () => {
+    try {
+      trava = await wl.request('screen');
+      trava.addEventListener('release', () => { trava = null; pintarBtn(); });
+    } catch { trava = null; btn.textContent = 'Tela acesa indisponível'; return; }
+    pintarBtn();
+  };
+  btn.hidden = false;
+  btn.addEventListener('click', async () => {
+    querAcesa = !trava;
+    if (trava) { await trava.release().catch(() => {}); trava = null; pintarBtn(); } else await pedir();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && querAcesa && !trava) void pedir();
+  });
 }
 
 export type { Entrada };

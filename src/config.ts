@@ -90,3 +90,12 @@ export const FONTE = {
   portal: 'https://resultados.tse.jus.br/oficial/app/index.html',
   documentacao: 'https://www.tse.jus.br/eleicoes/informacoes-tecnicas-sobre-a-divulgacao-de-resultados',
 };
+
+/**
+ * Foto oficial do candidato (pelo sqcand do arquivo EA20).
+ * Endereço confirmado em 25/10/2026: HTTP 200 image/jpeg para os dois sqcand (ramo verificacao, fotos.txt).
+ */
+export const FOTOS_BASE = env.VITE_FOTOS_BASE ?? `https://resultados.tse.jus.br/oficial/ele${ELEICAO.ano}/${ELEICAO.codigo}/fotos/br`;
+export function urlFoto(sqcand: number): string | null {
+  return FOTOS_BASE ? `${FOTOS_BASE}/${sqcand}.jpeg` : null;
+}

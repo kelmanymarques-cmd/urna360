@@ -43,6 +43,7 @@ test('aguardando: arquivo oficial sem seções totalizadas não vira 0%', async 
   await expect(page.getByTestId('pct-22')).toHaveText('—');
   await expect(page.getByTestId('pct-13')).toHaveText('—');
   await expect(page.getByTestId('ind-brancos')).toContainText('—');
+  await expect(page.getByTestId('vantagem')).toHaveCount(0);
   await page.screenshot({ path: `test-results/aguardando-${info.project.name}.png`, fullPage: true });
 });
 
@@ -62,6 +63,11 @@ test('em andamento: cores por liderança, neutro sem dados, detalhes e camadas',
   await expect(page.getByTestId('pct-totalizadas')).toHaveText('43,21%');
   await expect(page.getByTestId('pct-22')).toHaveText('52,00%');
   await expect(page.getByTestId('pct-13')).toHaveText('48,00%');
+  await expect(page.getByTestId('vantagem')).toContainText('Flávio Bolsonaro tem 4.000 votos a mais');
+  await expect(page.getByTestId('vice-22')).toHaveText('Vice: VICE');
+  // sem acesso à foto, os dois cartões mostram iniciais (mesmo tratamento)
+  await expect.poll(() => page.locator('.foto img').count()).toBe(0);
+  expect(await page.locator('.foto').evaluateAll((els) => els.map((e) => e.getAttribute('data-iniciais')))).toEqual(['L', 'FB']);
 
   const estado = (uf: string) => page.locator(`#uf-${uf}`).getAttribute('data-estado');
   await expect.poll(() => estado('pe')).toBe('lula');
@@ -76,6 +82,7 @@ test('em andamento: cores por liderança, neutro sem dados, detalhes e camadas',
   await page.locator('#uf-pe').click();
   await expect(page.getByTestId('detalhe-uf')).toContainText('Pernambuco');
   await expect(page.getByTestId('detalhe-uf')).toContainText('70,00%');
+  await expect(page.getByTestId('vantagem-uf')).toContainText('Lula tem 400 votos a mais');
   // teclado
   await page.locator('#uf-sp').focus();
   await page.keyboard.press('Enter');

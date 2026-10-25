@@ -56,6 +56,13 @@ describe('normalização EA20', () => {
     expect(r.totalizadoEm?.texto).toBe('25/10/2026 18:00:00');
   });
 
+  it('extrai sqcand (foto) e vice de cada candidato', () => {
+    const r = normalizarResultado(ea20({ st: 1, flavio: 1, lula: 1 }), 'br');
+    const f = r.candidatos.find((c) => c.numero === 22)!;
+    expect(f.sqcand).toBe(280000000022);
+    expect(f.vice).toBe('VICE');
+  });
+
   it('mantém brancos, nulos e abstenção separados dos votos nominais', () => {
     const r = normalizarResultado(ea20({ st: 10, flavio: 100, lula: 100, vb: 50, vn: 50, c: 300, a: 700 }), 'br');
     const somaCands = r.candidatos.reduce((s, c) => s + (c.votos ?? 0), 0);

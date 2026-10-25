@@ -172,6 +172,8 @@ function extrairCandidatos(raw: Obj, avisos: string[]): CandidatoResultado[] {
           nomeUrna,
           nome: texto(cand.nm),
           partido: texto(par.sg),
+          sqcand: inteiro(cand.sqcand),
+          vice: extrairVice(cand.vs),
           seq: inteiro(cand.seq),
           votos: inteiro(cand.vap),
           percentual: percentual(cand.pvapn) ?? percentual(cand.pvap),
@@ -182,6 +184,12 @@ function extrairCandidatos(raw: Obj, avisos: string[]): CandidatoResultado[] {
   }
   out.sort((x, y) => (x.seq ?? 99) - (y.seq ?? 99) || x.numero - y.numero);
   return out;
+}
+
+function extrairVice(vs: unknown): string | null {
+  if (!Array.isArray(vs)) return null;
+  const v = vs.find((x) => isObj(x) && x.tp === 'v');
+  return isObj(v) ? texto(v.nmu) ?? texto(v.nm) : null;
 }
 
 /** EA14 — arquivo de acompanhamento Brasil (br-e006258-ab.json). */
