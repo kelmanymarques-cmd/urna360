@@ -1,0 +1,46 @@
+name: buscar-hino
+# Procura gravações do Hino Nacional no Wikimedia Commons e registra licença (para escolher uma de domínio público).
+on:
+  workflow_dispatch:
+    inputs:
+      arquivo: { description: 'Título exato do arquivo no Commons para baixar (vazio = só listar)', required: false, default: '' }
+permissions:
+  contents: write
+jobs:
+  hino:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Listar candidatos e licenças
+        run: |
+          UA='URNA360/0.1 (kelmanymarques-cmd/urna360; painel de apuração)'
+          curl -sS -A "$UA" 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=25&gsrsearch=Hino%20Nacional%20Brasileiro&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiextmetadatafilter=LicenseShortName|Artist|Credit' > /tmp/busca.json
+          python3 - <<'PY' > /tmp/hinos.txt
+          import json
+          d=json.load(open('/tmp/busca.json'))
+          for p in d.get('query',{}).get('pages',{}).values():
+              ii=(p.get('imageinfo') or [{}])[0]; m=ii.get('extmetadata',{})
+              if not ii.get('mime','').startswith(('audio','application/ogg','video/webm')): continue
+              print(p['title'],'|',ii.get('mime'),'|',ii.get('size'),'|',m.get('LicenseShortName',{}).get('value'),'|',m.get('Artist',{}).get('value','')[:120].replace('\n',' '),'|',ii.get('url'))
+          PY
+          cat /tmp/hinos.txt
+      - name: Baixar e converter (se pedido)
+        if: inputs.arquivo != ''
+        run: |
+          UA='URNA360/0.1 (kelmanymarques-cmd/urna360; painel de apuração)'
+          T=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "${{ inputs.arquivo }}")
+          curl -sS -A "$UA" "https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=$T&prop=imageinfo&iiprop=url|extmetadata&iiextmetadatafilter=LicenseShortName|Artist|Credit|UsageTerms" > /tmp/info.json
+          URL=$(python3 -c "import json;d=json.load(open('/tmp/info.json'));print(list(d['query']['pages'].values())[0]['imageinfo'][0]['url'])")
+          curl -sS -L -A "$UA" -o /tmp/hino.orig "$URL"
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          ffmpeg -loglevel error -y -i /tmp/hino.orig -vn -ac 2 -b:a 96k /tmp/hino-nacional.mp3
+          ls -la /tmp/hino-nacional.mp3
+          cp /tmp/info.json /tmp/hino-licenca.json
+      - name: Registrar
+        if: always()
+        run: |
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/hinos.txt hinos-commons.txt 2>/dev/null || true
+          cp /tmp/hino-nacional.mp3 /tmp/hino-licenca.json . 2>/dev/null || true
+          git add -A && git commit -qm "Busca do Hino Nacional no Commons" && git push -q origin verificacao || true
