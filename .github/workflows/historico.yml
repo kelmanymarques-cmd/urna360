@@ -1,0 +1,26 @@
+name: historico
+# Registra a evolução oficial da apuração (arquivo nacional do TSE) no ramo "historico",
+# para o gráfico mostrar a curva completa desde o início da coleta.
+on:
+  workflow_dispatch:
+    inputs:
+      minutos: { description: 'Duração da coleta em minutos (máx. ~350)', required: false, default: '340' }
+permissions:
+  contents: write
+concurrency: { group: historico, cancel-in-progress: false }
+jobs:
+  registrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: codigo }
+      - name: Preparar ramo historico
+        run: |
+          git clone -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" hist
+          cd hist
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin historico >/dev/null; then git checkout -q historico; else git checkout -q --orphan historico && git rm -rqf . && echo '[]' > historico.json && git add historico.json && git commit -qm "inicia historico" && git push -q origin historico; fi
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node codigo/scripts/registrar-historico.mjs hist "${{ inputs.minutos }}"
