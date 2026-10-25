@@ -6,6 +6,7 @@ import { Store, type Estado, type Entrada, type PontoHistorico } from './data/st
 import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
+import { acharMunicipio, compartilhar, municipiosDaUF, primeiroTurno, resultadoMunicipio, resumo1T, textoCompartilhar } from './ui/extras';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const COR: Record<string, string> = { flavio: CORES_CANDIDATOS.flavio, lula: CORES_CANDIDATOS.lula };
@@ -118,6 +119,8 @@ function renderNacional() {
       <span class="grande num" data-vivo="pct-totalizadas" data-testid="pct-totalizadas">${pctTxt(tot.pctTotalizadas)}</span>
       <div class="barra" role="progressbar" aria-label="Seções totalizadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${(tot.pctTotalizadas ?? 0).toFixed(2)}"><i style="width:${tot.pctTotalizadas ?? 0}%"></i></div>
       <span class="nota num">${num(tot.totalizadas)} de ${num(tot.total)} seções · eleitorado total ${num(e.total)}</span>
+      ${tot.total !== null && tot.totalizadas !== null && !r.totalizacaoFinal ? `<span class="falta num" data-testid="falta">Faltam ${num(tot.total - tot.totalizadas)} seções${e.emSecoesNaoTotalizadas !== null ? ` (${num(e.emSecoesNaoTotalizadas)} eleitores)` : ''} para totalizar.</span>` : ''}
+      <span class="falta" data-testid="nacional-1t">${primeiroTurnoTexto('br')}</span>
       ${r.definidoMatematicamente === 'eleito' && !r.totalizacaoFinal ? '<span class="chip">TSE informa: resultado matematicamente definido</span>' : ''}
     </div>
     <div class="cands">${cards}</div>
@@ -201,6 +204,9 @@ function linhaUF(uf: string) {
 
 function renderDetalhe() {
   const uf = ui.selecionada;
+  const sel = $<HTMLSelectElement>('sel-uf');
+  if (sel.value !== (uf ?? '')) sel.value = uf ?? '';
+  if (extraDe !== uf) renderDetalheExtra(uf);
   if (!uf) {
     $('detalhe').innerHTML = `<p class="nota">Toque ou clique em uma UF (ou use Tab + Enter) para ver os detalhes.</p>`;
     return;
@@ -227,6 +233,102 @@ function renderDetalhe() {
     </dl>
     ${ent?.ultimoErro ? `<p class="nota" style="color:var(--alerta)">Última atualização desta UF falhou: ${esc(ent.ultimoErro.mensagem)}</p>` : ''}
   </div>`;
+}
+
+// ---------- 1º turno e municípios (renderizados só ao trocar de UF, para não apagar a busca) ----------
+const textos1T = new Map<string, string>();
+function primeiroTurnoTexto(abr: string): string {
+  const t = textos1T.get(abr);
+  if (t !== undefined) return t;
+  textos1T.set(abr, '1º turno: carregando…');
+  void primeiroTurno(abr).then((b) => {
+    textos1T.set(abr, b.ok
+      ? `1º turno (TSE, final): ${resumo1T(b.dados)} — base: votos de todos os candidatos do 1º turno`
+      : '1º turno: indisponível no momento.');
+    if (!b.ok) setTimeout(() => textos1T.delete(abr), 60_000);
+    if (abr === 'br') renderNacional();
+    else if (extraDe === abr) renderDetalheExtra(abr);
+  });
+  return '1º turno: carregando…';
+}
+
+let extraDe: string | null = null;
+function renderDetalheExtra(uf: string | null) {
+  extraDe = uf;
+  const alvo = $('detalhe-extra');
+  if (!uf || uf === ABRANGENCIA_EXTERIOR) { alvo.innerHTML = ''; return; }
+  const busca = alvo.querySelector<HTMLInputElement>('#busca-mun');
+  const mesmaUF = alvo.dataset.uf === uf;
+  const t1 = primeiroTurnoTexto(uf);
+  if (mesmaUF && busca) {
+    alvo.querySelector('[data-testid="uf-1t"]')!.textContent = t1;
+    return;
+  }
+  alvo.dataset.uf = uf;
+  alvo.innerHTML = `<div class="cartao">
+      <h4>Comparação com o 1º turno</h4>
+      <p class="linha-1t nota" data-testid="uf-1t">${esc(t1)}</p>
+    </div>
+    <div class="cartao mun">
+      <label for="busca-mun"><h4>Município em ${esc(nomeUF(uf))}</h4></label>
+      <input id="busca-mun" list="lista-mun" autocomplete="off" placeholder="Digite o nome do município" />
+      <datalist id="lista-mun"></datalist>
+      <div id="mun-res" class="mun-res" aria-live="polite"><p class="nota">Escolha um município para ver a parcial oficial dele.</p></div>
+    </div>`;
+  const input = alvo.querySelector<HTMLInputElement>('#busca-mun')!;
+  const carregarLista = () => {
+    if (input.dataset.carregado) return;
+    input.dataset.carregado = '1';
+    municipiosDaUF(uf).then((lista) => {
+      alvo.querySelector('#lista-mun')!.innerHTML = lista.map((m) => `<option value="${esc(m.nm)}"></option>`).join('');
+    }).catch(() => {
+      input.dataset.carregado = '';
+      alvo.querySelector('#mun-res')!.innerHTML = '<p class="nota">Lista de municípios indisponível agora. Tente de novo.</p>';
+    });
+  };
+  input.addEventListener('focus', carregarLista);
+  input.addEventListener('change', async () => {
+    const res = alvo.querySelector<HTMLElement>('#mun-res')!;
+    let lista;
+    try { lista = await municipiosDaUF(uf); } catch { res.innerHTML = '<p class="nota">Lista de municípios indisponível agora.</p>'; return; }
+    const m = acharMunicipio(lista, input.value);
+    if (!m) { res.innerHTML = '<p class="nota">Município não encontrado nesta UF.</p>'; return; }
+    res.innerHTML = '<p class="nota">Carregando dados oficiais…</p>';
+    const b = await resultadoMunicipio(uf, m.cd);
+    if (!b.ok) { res.innerHTML = `<p class="nota">Dados indisponíveis: ${esc(b.erro.mensagem)}</p>`; return; }
+    const r = b.dados;
+    const c = confirmados(r);
+    const vd = r.votosDisponiveis;
+    res.innerHTML = `<p data-testid="mun-nome"><strong>${esc(m.nm)}</strong>${m.capital ? ' (capital)' : ''}</p>
+      <dl class="num">
+        <dt>Seções totalizadas</dt><dd>${pctTxt(r.secoes.pctTotalizadas)}</dd>
+        <dt>Flávio Bolsonaro (22)</dt><dd>${vd ? `${num(c.flavio?.votos)} · ${pctTxt(c.flavio?.percentual)}` : TRACO}</dd>
+        <dt>Lula (13)</dt><dd>${vd ? `${num(c.lula?.votos)} · ${pctTxt(c.lula?.percentual)}` : TRACO}</dd>
+        <dt>Diferença</dt><dd>${textoVantagem(r, 'uf')}</dd>
+        <dt>Brancos · Nulos</dt><dd>${vd ? `${pctTxt(r.votos.pctBrancos)} · ${pctTxt(r.votos.pctNulos)}` : TRACO}</dd>
+        <dt>Totalização (TSE)</dt><dd>${esc(r.totalizadoEm?.texto ?? 'ainda não iniciada')}</dd>
+      </dl>
+      <p class="nota">Consultado às ${hora(Date.now())}. Escolha de novo para atualizar.</p>`;
+  });
+}
+
+// ---------- destaque das UFs que receberam totalização nova ----------
+const totalizacaoVistaUF = new Map<string, string>();
+function piscarUFsAtualizadas() {
+  for (const uf of UFS) {
+    const t = resUF(uf)?.totalizadoEm?.texto ?? acompUF(uf)?.totalizadoEm?.texto;
+    if (!t) continue;
+    const antes = totalizacaoVistaUF.get(uf);
+    totalizacaoVistaUF.set(uf, t);
+    if (antes && antes !== t) {
+      const p = document.getElementById(`uf-${uf}`);
+      if (!p) continue;
+      p.classList.remove('pisca');
+      void (p as unknown as HTMLElement).offsetWidth;
+      p.classList.add('pisca');
+      setTimeout(() => p.classList.remove('pisca'), 2600);
+    }
+  }
 }
 
 function renderTabela() {
@@ -285,6 +387,7 @@ function renderEvolucao() {
 // ---------- ciclo de renderização ----------
 function renderMapa() {
   pintarMapa($('mapa'), { camada: ui.camada, texturas: ui.texturas, selecionada: ui.selecionada, resultado: resUF, acomp: acompUF });
+  piscarUFsAtualizadas();
   renderLegenda();
   renderDetalhe();
   renderTabela();
@@ -338,6 +441,34 @@ function iniciar() {
     const n = bs[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length];
     e.preventDefault();
     n?.click();
+  });
+  const sel = $<HTMLSelectElement>('sel-uf');
+  sel.insertAdjacentHTML('beforeend', [...UFS].sort((a, b) => nomeUF(a).localeCompare(nomeUF(b), 'pt-BR'))
+    .map((u) => `<option value="${u}">${esc(nomeUF(u))} (${u.toUpperCase()})</option>`).join(''));
+  sel.addEventListener('change', () => { ui.selecionada = sel.value || null; renderMapa(); });
+  $('btn-compartilhar').addEventListener('click', async () => {
+    const b = $<HTMLButtonElement>('btn-compartilhar');
+    const r = estado.nacional.dados;
+    if (!r) { b.textContent = 'Sem dados ainda'; setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500); return; }
+    const res = await compartilhar(textoCompartilhar(r, location.href));
+    b.textContent = res === 'copiado' ? 'Texto copiado ✓' : res === 'compartilhado' ? 'Compartilhado ✓' : 'Não foi possível';
+    setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500);
+  });
+  const aplicarTema = (claro: boolean) => {
+    if (claro) document.documentElement.setAttribute('data-tema', 'claro');
+    else document.documentElement.removeAttribute('data-tema');
+    const bt = $<HTMLButtonElement>('btn-tema');
+    bt.textContent = claro ? 'Tema escuro' : 'Tema claro';
+    bt.setAttribute('aria-pressed', String(claro));
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', claro ? '#F3F5FA' : '#071226');
+  };
+  let claro = false;
+  try { claro = localStorage.getItem('urna360.tema') === 'claro'; } catch { /* opcional */ }
+  aplicarTema(claro);
+  $('btn-tema').addEventListener('click', () => {
+    claro = !claro;
+    try { localStorage.setItem('urna360.tema', claro ? 'claro' : 'escuro'); } catch { /* opcional */ }
+    aplicarTema(claro);
   });
   $('detalhe').addEventListener('click', (e) => {
     if (!(e.target as Element).closest('[data-acao="desmarcar"]')) return;

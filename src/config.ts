@@ -99,3 +99,17 @@ export const FOTOS_BASE = env.VITE_FOTOS_BASE ?? `https://resultados.tse.jus.br/
 export function urlFoto(sqcand: number): string | null {
   return FOTOS_BASE ? `${FOTOS_BASE}/${sqcand}.jpeg` : null;
 }
+
+/** 1º turno (eleição 6257), já totalizado — confirmado em 25/10/2026 (HTTP 200, tf="s"). */
+export const ELEICAO_1T = { codigo: 6257, codigoArquivo: '006257', turno: 1 } as const;
+export function caminhoResultado1T(abr: string): string {
+  return `/${AMBIENTE}/ele${ELEICAO.ano}/${ELEICAO_1T.codigo}/dados/${abr}/${abr}-c${ELEICAO.cargo}-e${ELEICAO_1T.codigoArquivo}-u.json`;
+}
+/** Configuração de municípios (EA12) — confirmado: abr[].cd (UF), abr[].mu[] {cd, nm, ...}. */
+export function caminhoConfigMunicipios(): string {
+  return `/${AMBIENTE}/ele${ELEICAO.ano}/${ELEICAO.codigo}/config/mun-e${ELEICAO.codigoArquivo}-cm.json`;
+}
+/** Resultado do município: <uf><cd 5 dígitos>-c0001-e006258-u.json — confirmado (pe26310). */
+export function caminhoMunicipio(uf: string, cd: string): string {
+  return `/${AMBIENTE}/ele${ELEICAO.ano}/${ELEICAO.codigo}/dados/${uf}/${uf}${cd}-c${ELEICAO.cargo}-e${ELEICAO.codigoArquivo}-u.json`;
+}

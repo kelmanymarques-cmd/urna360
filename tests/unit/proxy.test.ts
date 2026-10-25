@@ -22,7 +22,9 @@ describe('proxy', () => {
     expect(caminhoPermitido('/oficial/ele2026/6258/dados/pe/pe-e006258-ab.json')).toBeNull();
     expect(caminhoPermitido('/oficial/ele2026/6258/dados/xx/xx-c0001-e006258-u.json')).toBeNull();
     expect(caminhoPermitido('/oficial/ele2026/6258/dados/pe/sp-c0001-e006258-u.json')).toBeNull();
-    expect(caminhoPermitido('/oficial/ele2026/6257/dados/br/br-c0001-e006257-u.json')).toBeNull();
+    expect(caminhoPermitido('/oficial/ele2026/6259/dados/br/br-c0001-e006259-u.json')).toBeNull();
+    expect(caminhoPermitido('/oficial/ele2026/6257/dados/br/br-c0001-e006257-u.json')).toBeTruthy();
+    expect(caminhoPermitido('/oficial/ele2026/6258/dados/pe/pe26310-c0001-e006258-u.json')).toBeTruthy();
     expect(caminhoPermitido('/../../etc/passwd')).toBeNull();
   });
 

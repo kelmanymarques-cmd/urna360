@@ -46,6 +46,8 @@ export interface Resultado {
   eleitorado: {
     total: number | null;
     emSecoesTotalizadas: number | null;
+    /** Eleitores em seções ainda não totalizadas (esnt). */
+    emSecoesNaoTotalizadas: number | null;
     comparecimento: number | null;
     abstencao: number | null;
     pctComparecimento: number | null;

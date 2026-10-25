@@ -7,6 +7,11 @@
     <meta name="description" content="URNA360 — acompanhamento da apuração do 2º turno presidencial de 2026 com dados oficiais do TSE." />
     <title>URNA360 · Apuração 2º turno 2026</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icone-180.png" />
+    <meta name="theme-color" content="#071226" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="URNA360" />
   </head>
   <body>
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
@@ -27,6 +32,8 @@
         <div class="estado-fonte" id="estado-fonte" role="status" aria-live="polite"></div>
         <button type="button" class="botao botao-p" id="btn-tela" aria-pressed="false" hidden>Manter tela acesa</button>
         <button type="button" class="botao botao-p" id="btn-alerta" aria-pressed="false">Avisar novas parciais</button>
+        <button type="button" class="botao botao-p" id="btn-compartilhar">Compartilhar parcial</button>
+        <button type="button" class="botao botao-p" id="btn-tema" aria-pressed="false">Tema claro</button>
       </div>
     </header>
 
@@ -56,7 +63,11 @@
           </div>
           <aside class="lateral">
             <div id="legenda" class="legenda" aria-live="polite"></div>
+            <label class="escolher-uf" for="sel-uf">Escolher estado
+              <select id="sel-uf"><option value="">— nenhum —</option></select>
+            </label>
             <div id="detalhe" class="detalhe" aria-live="polite"></div>
+            <div id="detalhe-extra" class="extra"></div>
           </aside>
         </div>
         <div class="acoes-mapa">

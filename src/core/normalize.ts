@@ -33,16 +33,19 @@ function pctOficialOu(o: Obj, chave: string, parte: number | null, total: number
   return percentual(o[`${chave}n`]) ?? percentual(o[chave]) ?? pct(parte, total);
 }
 
-function validarCabecalho(raw: Obj, avisos: string[]): { simulado: boolean } {
+export interface EleicaoEsperada { codigo: number; turno: number }
+const ESPERADA_PADRAO: EleicaoEsperada = { codigo: ELEICAO.codigo, turno: ELEICAO.turno };
+
+function validarCabecalho(raw: Obj, avisos: string[], esperado: EleicaoEsperada = ESPERADA_PADRAO): { simulado: boolean } {
   const ele = inteiro(raw.ele);
   const turno = inteiro(raw.t);
   if (ele === null || turno === null) {
     throw new ErroNormalizacao('campos_obrigatorios', 'Arquivo sem código de eleição (ele) ou turno (t).');
   }
-  if (ele !== ELEICAO.codigo || turno !== ELEICAO.turno) {
+  if (ele !== esperado.codigo || turno !== esperado.turno) {
     throw new ErroNormalizacao(
       'eleicao_divergente',
-      `Arquivo de outra eleição (ele=${ele}, t=${turno}); esperado ele=${ELEICAO.codigo}, t=${ELEICAO.turno}.`,
+      `Arquivo de outra eleição (ele=${ele}, t=${turno}); esperado ele=${esperado.codigo}, t=${esperado.turno}.`,
     );
   }
   const fase = raw.f;
@@ -50,10 +53,10 @@ function validarCabecalho(raw: Obj, avisos: string[]): { simulado: boolean } {
   return { simulado: fase !== 'o' };
 }
 
-export function normalizarResultado(raw: unknown, abrangenciaEsperada: string): Resultado {
+export function normalizarResultado(raw: unknown, abrangenciaEsperada: string, esperado: EleicaoEsperada = ESPERADA_PADRAO): Resultado {
   if (!isObj(raw)) throw new ErroNormalizacao('formato', 'Resposta não é um objeto JSON.');
   const avisos: string[] = [];
-  const { simulado } = validarCabecalho(raw, avisos);
+  const { simulado } = validarCabecalho(raw, avisos, esperado);
 
   const cdabr = texto(raw.cdabr)?.toLowerCase() ?? null;
   if (cdabr !== null && cdabr !== abrangenciaEsperada.toLowerCase()) {
@@ -97,8 +100,8 @@ export function normalizarResultado(raw: unknown, abrangenciaEsperada: string): 
   const md = raw.md;
   return {
     abrangencia: cdabr ?? abrangenciaEsperada.toLowerCase(),
-    eleicao: ELEICAO.codigo,
-    turno: ELEICAO.turno,
+    eleicao: esperado.codigo,
+    turno: esperado.turno,
     simulado,
     geradoEm: carimbo(raw.dg, raw.hg),
     totalizadoEm: carimbo(raw.dt, raw.ht),
@@ -116,6 +119,7 @@ export function normalizarResultado(raw: unknown, abrangenciaEsperada: string): 
     eleitorado: {
       total: inteiro(e.te),
       emSecoesTotalizadas: est,
+      emSecoesNaoTotalizadas: inteiro(e.esnt),
       comparecimento: temEleitoradoApurado ? c : null,
       abstencao: temEleitoradoApurado ? a : null,
       pctComparecimento: temEleitoradoApurado ? pctOficialOu(e, 'pc', c, somaSeAmbos(c, a)) : null,

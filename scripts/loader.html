@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>URNA360 · Apuração 2º turno 2026</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icone-180.png" />
+    <meta name="theme-color" content="#071226" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="URNA360" />
+    <style>
+      body { margin: 0; background: #071226; color: #EEF2FA; font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+      #carregando { padding: 32px 16px; text-align: center; color: #A9B6CF; }
+      #nova-versao { position: fixed; z-index: 60; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+        font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 999px; border: 0; background: #F6C445; color: #071226; cursor: pointer; box-shadow: 0 6px 20px #0008; }
+    </style>
+  </head>
+  <body>
+    <p id="carregando">Carregando URNA360…</p>
+    <script>
+      /*
+       * Carregador: busca sempre a versão mais recente publicada no ramo "site" e carrega
+       * os arquivos daquele commit pelo jsDelivr (endereço imutável, sem cache velho).
+       * Os DADOS continuam vindo direto do TSE, pelo próprio app.
+       */
+      (function () {
+        var REPO = 'kelmanymarques-cmd/urna360';
+        function ultimaVersao() {
+          return fetch('https://api.github.com/repos/' + REPO + '/commits/site', { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) { return j && /^[0-9a-f]{40}$/.test(j.sha) ? j.sha : null; })
+            .catch(function () { return null; });
+        }
+        function carregar(base) {
+          return fetch(base + 'app.html', { cache: 'no-store' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+            .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var css = doc.querySelectorAll('link[rel="stylesheet"]');
+              var js = doc.querySelectorAll('script[type="module"][src]');
+              if (!js.length) throw new Error('app sem script');
+              css.forEach(function (l) {
+                var n = document.createElement('link');
+                n.rel = 'stylesheet';
+                n.href = new URL(l.getAttribute('href'), base).href;
+                document.head.appendChild(n);
+              });
+              doc.querySelectorAll('script').forEach(function (s) { s.remove(); });
+              document.body.innerHTML = doc.body.innerHTML;
+              js.forEach(function (s) {
+                var n = document.createElement('script');
+                n.type = 'module';
+                n.crossOrigin = 'anonymous';
+                n.src = new URL(s.getAttribute('src'), base).href;
+                document.body.appendChild(n);
+              });
+            });
+        }
+        var atual = null;
+        ultimaVersao().then(function (sha) {
+          atual = sha;
+          var base = sha ? 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + sha + '/' : new URL('./', location.href).href;
+          return carregar(base).catch(function () { return carregar(new URL('./', location.href).href); });
+        }).catch(function () {
+          document.getElementById('carregando').textContent = 'Não foi possível carregar o painel. Recarregue a página.';
+        });
+        // Avisa quando houver versão nova do painel (não interrompe a leitura).
+        setInterval(function () {
+          if (document.visibilityState !== 'visible' || !atual) return;
+          ultimaVersao().then(function (sha) {
+            if (!sha || sha === atual || document.getElementById('nova-versao')) return;
+            var b = document.createElement('button');
+            b.id = 'nova-versao';
+            b.type = 'button';
+            b.textContent = 'Nova versão do painel · toque para atualizar';
+            b.onclick = function () { location.reload(); };
+            document.body.appendChild(b);
+          });
+        }, 10 * 60 * 1000);
+      })();
+    </script>
+  </body>
+</html>

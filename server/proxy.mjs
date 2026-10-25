@@ -29,9 +29,19 @@ const ABRANGENCIAS = new Set([
 const RE_ARQUIVO = new RegExp(
   `^/(oficial|simulado2026)/ele2026/${ELEICAO}/dados/([a-z]{2})/([a-z]{2})-(c0001-e${ELEICAO_ARQ}-u|e${ELEICAO_ARQ}-ab)\\.json$`,
 );
+const RE_EXTRAS = [
+  /^\/oficial\/ele2026\/6257\/dados\/([a-z]{2})\/([a-z]{2})-c0001-e006257-u\.json$/,
+  /^\/oficial\/ele2026\/6258\/dados\/([a-z]{2})\/([a-z]{2})\d{5}-c0001-e006258-u\.json$/,
+];
+const CONFIG_MUN = '/oficial/ele2026/6258/config/mun-e006258-cm.json';
 
 /** Valida o caminho pedido. Retorna null se não for um arquivo permitido. */
 export function caminhoPermitido(p) {
+  if (p === CONFIG_MUN) return p;
+  for (const re of RE_EXTRAS) {
+    const x = re.exec(p);
+    if (x && x[1] === x[2] && ABRANGENCIAS.has(x[1])) return p;
+  }
   const m = RE_ARQUIVO.exec(p);
   if (!m) return null;
   const [, , dir, abr, tipo] = m;

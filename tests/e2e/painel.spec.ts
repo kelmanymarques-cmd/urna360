@@ -10,6 +10,17 @@ async function fonte(page: Page, porUF: (uf: string) => OpcoesEA20 | null, nacio
     if (url.includes('-ab.json')) {
       return route.fulfill({ json: ab ?? ea14(UFS.map((u) => ({ abr: u, st: porUF(u)?.st ?? 0, ts: 1000 }))) });
     }
+    if (url.includes('/config/mun-')) {
+      return route.fulfill({ json: { dg: '25/10/2026', hg: '18:00:00', idg: '1', f: 'o', abr: [
+        { cd: 'PE', ds: 'PERNAMBUCO', mu: [{ cd: '25313', cdi: '2611606', nm: 'RECIFE', c: 's', z: [] }, { cd: '24376', cdi: '2604106', nm: 'CARUARU', c: 'n', z: [] }] },
+      ] } });
+    }
+    const mun = /dados\/([a-z]{2})\/[a-z]{2}(\d{5})-c0001/.exec(url);
+    if (mun) return route.fulfill({ json: ea20({ abr: mun[2], st: 50, ts: 100, flavio: 300, lula: 700 }) });
+    if (url.includes('e006257')) {
+      const a = /dados\/([a-z]{2})\//.exec(url)?.[1] ?? 'br';
+      return route.fulfill({ json: ea20({ abr: a, ele: 6257, t: 1, st: 1000, ts: 1000, flavio: 4703, lula: 4516, tf: 's', and: 'f' }) });
+    }
     const m = /dados\/([a-z]{2})\//.exec(url);
     const abr = m?.[1] ?? 'br';
     if (abr === 'br') return route.fulfill({ json: ea20({ abr: 'br', ...nacional }) });
@@ -187,6 +198,37 @@ test('sem indicação do TSE não há aviso de eleito', async ({ page }) => {
   await expect(page.getByTestId('pct-22')).toHaveText('90,00%');
   await expect(page.getByTestId('aviso-eleito')).toHaveCount(0);
   await expect(page.getByTestId('selo-eleito')).toHaveCount(0);
+});
+
+test('seletor de UF, 1º turno, município, quanto falta, compartilhar e tema', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await page.addInitScript(() => { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); });
+  await fonte(page, () => ({ st: 10, ts: 100, flavio: 4, lula: 6 }), { st: 2500, ts: 10000, flavio: 40, lula: 60 });
+  await page.goto('/');
+  await expect(page.getByTestId('falta')).toContainText('Faltam 7.500 seções');
+  await expect(page.getByTestId('nacional-1t')).toContainText('1º turno (TSE, final): Flávio Bolsonaro 51,01% · Lula 48,99%');
+  // escolher UF pela lista
+  await page.locator('#sel-uf').selectOption('pe');
+  await expect(page.getByTestId('detalhe-uf')).toContainText('Pernambuco');
+  await expect(page.locator('#uf-pe')).toHaveClass(/sel/);
+  await expect(page.getByTestId('uf-1t')).toContainText('1º turno (TSE, final)');
+  // município
+  await page.locator('#busca-mun').focus();
+  await page.locator('#busca-mun').fill('caruaru');
+  await page.locator('#busca-mun').press('Enter');
+  await page.locator('#busca-mun').dispatchEvent('change');
+  await expect(page.getByTestId('mun-nome')).toHaveText('CARUARU');
+  await expect(page.locator('#mun-res')).toContainText('Lula tem 400 votos a mais');
+  // a busca sobrevive à atualização do painel (não é recriada)
+  await page.locator('#sel-uf').selectOption('');
+  await expect(page.getByTestId('detalhe-uf')).toHaveCount(0);
+  await expect(page.locator('#detalhe-extra')).toBeEmpty();
+  // tema
+  await page.getByRole('button', { name: 'Tema claro' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-tema', 'claro');
+  await page.getByRole('button', { name: 'Tema escuro' }).click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-tema', 'claro');
+  await semRolagemHorizontal(page);
 });
 
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {

@@ -199,3 +199,18 @@ describe('resultado definido pelo TSE (hino para qualquer eleito)', () => {
     expect(eleicaoDefinida(r({ md: 'e', eleito: 13, dv: 'n' })).definido).toBe(false);
   });
 });
+
+describe('1º turno e municípios', () => {
+  it('normaliza arquivo do 1º turno só quando pedido explicitamente', () => {
+    const raw = ea20({ ele: 6257, t: 1, st: 10, flavio: 47, lula: 45, tf: 's', and: 'f' });
+    expect(() => normalizarResultado(raw, 'br')).toThrow(/outra eleição/);
+    const r = normalizarResultado(raw, 'br', { codigo: 6257, turno: 1 });
+    expect(r.turno).toBe(1);
+    expect(r.candidatos.find((c) => c.numero === 22)!.votos).toBe(47);
+  });
+  it('lê eleitores em seções não totalizadas', () => {
+    const raw = ea20({ st: 10 }) as Record<string, any>;
+    raw.e.esnt = '12345';
+    expect(normalizarResultado(raw, 'br').eleitorado.emSecoesNaoTotalizadas).toBe(12345);
+  });
+});
