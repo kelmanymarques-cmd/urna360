@@ -58,7 +58,7 @@ const TIPOS = {
 
 const CABECALHOS_SEGURANCA = {
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://resultados.tse.jus.br; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://resultados.tse.jus.br; connect-src 'self' blob: https://resultados.tse.jus.br; frame-ancestors 'none'; base-uri 'self'; form-action 'none'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-Frame-Options': 'DENY',

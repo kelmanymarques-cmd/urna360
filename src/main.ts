@@ -6,6 +6,7 @@ import { Store, type Estado, type Entrada, type PontoHistorico } from './data/st
 import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
+import { compartilharImagem, gerarImagemParcial } from './ui/imagem';
 import { acharMunicipio, compartilhar, municipiosDaUF, primeiroTurno, resultadoMunicipio, resumo1T, textoCompartilhar } from './ui/extras';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -450,8 +451,17 @@ function iniciar() {
     const b = $<HTMLButtonElement>('btn-compartilhar');
     const r = estado.nacional.dados;
     if (!r) { b.textContent = 'Sem dados ainda'; setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500); return; }
-    const res = await compartilhar(textoCompartilhar(r, location.href));
-    b.textContent = res === 'copiado' ? 'Texto copiado ✓' : res === 'compartilhado' ? 'Compartilhado ✓' : 'Não foi possível';
+    b.textContent = 'Gerando imagem…';
+    b.disabled = true;
+    try {
+      const blob = await gerarImagemParcial({ nacional: r, resultadoUF: resUF, url: location.href });
+      const res = await compartilharImagem(blob, textoCompartilhar(r, location.href));
+      b.textContent = res === 'compartilhado' ? 'Compartilhado ✓' : 'Compartilhar parcial';
+    } catch {
+      const res = await compartilhar(textoCompartilhar(r, location.href));
+      b.textContent = res === 'copiado' ? 'Texto copiado ✓' : res === 'compartilhado' ? 'Compartilhado ✓' : 'Não foi possível';
+    }
+    b.disabled = false;
     setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500);
   });
   const aplicarTema = (claro: boolean) => {

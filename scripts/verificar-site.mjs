@@ -18,5 +18,19 @@ p.on('requestfailed', (r) => falhas.push(r.url()));
 const scripts = await p.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
 console.log(JSON.stringify({ url, status, ufs, versaoNova: versaoNova > 0, scripts, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
 await p.screenshot({ path: 'site-celular.png', fullPage: false });
+// Gera a imagem de compartilhamento com os dados reais (sem abrir o menu do sistema).
+try {
+  await p.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));
+  await p.locator('#btn-compartilhar').click();
+  const img = p.locator('#previa-imagem img');
+  await img.waitFor({ timeout: 15000 });
+  const dataUrl = await img.evaluate(async (el) => {
+    const b = await (await fetch(el.src)).blob();
+    return await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); });
+  });
+  const fs = await import('node:fs');
+  fs.writeFileSync('parcial-real.png', Buffer.from(String(dataUrl).split(',')[1], 'base64'));
+  console.log('imagem de compartilhamento gerada');
+} catch (e) { console.log('imagem de compartilhamento: falhou', String(e)); }
 await b.close();
 if (!status || status.includes('indisponíveis') || ufs !== 27 || reqs.length === 0) process.exit(1);

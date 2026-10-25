@@ -231,6 +231,43 @@ test('seletor de UF, 1º turno, município, quanto falta, compartilhar e tema', 
   await semRolagemHorizontal(page);
 });
 
+test('compartilhar gera imagem PNG da parcial', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __share?: ShareData };
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true });
+    Object.defineProperty(navigator, 'share', { value: (d: ShareData) => { w.__share = d; return Promise.resolve(); }, configurable: true });
+  });
+  await fonte(page, (u) => (u === 'pe' ? { st: 10, flavio: 1, lula: 3 } : { st: 10, flavio: 3, lula: 1 }), { st: 2500, ts: 10000, flavio: 40, lula: 60 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-13')).toHaveText('60,00%');
+  await page.getByRole('button', { name: 'Compartilhar parcial' }).click();
+  await expect(page.locator('#btn-compartilhar')).toHaveText('Compartilhado ✓');
+  const info = await page.evaluate(async () => {
+    const d = (window as unknown as { __share: ShareData }).__share;
+    const f = d.files![0]!;
+    const bmp = await createImageBitmap(f);
+    return { tipo: f.type, tam: f.size, w: bmp.width, h: bmp.height, texto: d.text };
+  });
+  expect(info).toMatchObject({ tipo: 'image/png', w: 1080, h: 1350 });
+  expect(info.tam).toBeGreaterThan(20_000);
+  expect(info.texto).toContain('Fonte: TSE');
+});
+
+test('sem compartilhamento de arquivo, mostra a imagem para salvar', async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }); });
+  await fonte(page, () => ({ st: 10, flavio: 1, lula: 3 }), { st: 2500, ts: 10000, flavio: 40, lula: 60 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-13')).toHaveText('60,00%');
+  await page.getByRole('button', { name: 'Compartilhar parcial' }).click();
+  await expect(page.getByTestId('previa-img')).toBeVisible();
+  await page.screenshot({ path: `test-results/previa-${test.info().project.name}.png` });
+  const src = await page.getByTestId('previa-img').getAttribute('src');
+  const png = await page.evaluate(async (u) => { const b = await (await fetch(u!)).blob(); return { t: b.type, s: b.size }; }, src);
+  expect(png.t).toBe('image/png');
+  await page.getByRole('button', { name: 'Fechar' }).click();
+  await expect(page.getByTestId('previa-img')).toHaveCount(0);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

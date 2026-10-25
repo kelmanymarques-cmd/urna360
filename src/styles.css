@@ -188,6 +188,15 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 .mapa path.pisca { animation: pisca 1.2s ease-in-out 2; }
 @keyframes pisca { 50% { filter: brightness(1.6); stroke: var(--amarelo); stroke-width: 2.5; } }
 
+/* Prévia da imagem compartilhável */
+.previa { position: fixed; inset: 0; z-index: 70; background: #000C; display: grid; place-items: center;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.previa-caixa { display: grid; gap: 12px; justify-items: center; max-width: 520px; width: 100%; max-height: 100%; overflow: auto;
+  background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 16px; padding: 16px; }
+.previa-caixa img { width: 100%; height: auto; border-radius: 10px; }
+.previa-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.previa-acoes a.botao { text-decoration: none; display: inline-flex; align-items: center; }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }
