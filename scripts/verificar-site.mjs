@@ -22,6 +22,10 @@ await p.locator('#g-evolucao').screenshot({ path: 'site-evolucao.png' }).catch((
 await p.locator('#regioes').screenshot({ path: 'site-regioes.png' }).catch(() => {});
 await p.locator('.mapa-grade').screenshot({ path: 'site-mapa.png' }).catch(() => {});
 await p.locator('#painel-nacional').screenshot({ path: 'site-nacional.png' }).catch(() => {});
+await p.locator('#sec-comparacao').scrollIntoViewIfNeeded().catch(() => {});
+await p.locator('[data-testid="tabela-comparacao"] tbody tr').nth(26).waitFor({ timeout: 20000 }).catch(() => {});
+await p.waitForTimeout(3000);
+await p.locator('#sec-comparacao').screenshot({ path: 'site-comparacao.png' }).catch(() => {});
 // Gera a imagem de compartilhamento com os dados reais (sem abrir o menu do sistema).
 try {
   await p.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));

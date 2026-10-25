@@ -16,7 +16,7 @@ jobs:
       - run: node scripts/verificar-site.mjs "${{ inputs.url }}" 2>&1 | tee site-verificacao.txt; exit ${PIPESTATUS[0]}
       - if: always()
         run: |
-          mkdir -p /tmp/ev && cp site-verificacao.txt site-celular.png parcial-real.png site-evolucao.png site-regioes.png site-mapa.png site-nacional.png /tmp/ev/ 2>/dev/null || true
+          mkdir -p /tmp/ev && cp site-verificacao.txt site-celular.png parcial-real.png site-evolucao.png site-regioes.png site-mapa.png site-nacional.png site-comparacao.png /tmp/ev/ 2>/dev/null || true
           git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
           git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
           cp /tmp/ev/* . && git add -A && git commit -qm "Verificação do site publicado" && git push -q origin verificacao

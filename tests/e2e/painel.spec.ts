@@ -303,6 +303,25 @@ test('evolução desde a coleta, ritmo, viradas, regiões, rótulos no mapa e te
   await expect(page.locator('.mapa-grade')).not.toHaveClass(/cheia/);
 });
 
+test('comparação 1º × 2º turno: tabela, mudança de liderança, base e ordenação', async ({ page }) => {
+  await fonte(page, (u) => (u === 'pe' ? { st: 60, ts: 100, flavio: 300, lula: 700 } : { st: 40, ts: 100, flavio: 600, lula: 400 }), { st: 4000, ts: 10000, flavio: 520, lula: 480 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-22')).toHaveText('52,00%');
+  await page.locator('#sec-comparacao').scrollIntoViewIfNeeded();
+  const tab = page.getByTestId('tabela-comparacao');
+  await expect(tab.locator('tbody tr')).toHaveCount(27);
+  await expect(page.getByTestId('cmp-mudaram')).toContainText('Pernambuco (Flávio → Lula)');
+  await expect(tab.locator('tr.mudou-lider')).toHaveCount(1);
+  // Flávio 1º (só entre os dois) = 4703/(4703+4516) = 51,01%; 2º = 52,00%
+  await expect(page.getByTestId('cmp-22')).toContainText('51,01%');
+  await expect(page.getByTestId('cmp-22')).toContainText('+1,0 p.p.');
+  await page.getByRole('radio', { name: '1º turno com todos os candidatos' }).click();
+  await expect(page.locator('#comparacao')).toContainText('Não é diretamente comparável');
+  await page.getByRole('button', { name: /^UF/ }).click();
+  await expect(tab.locator('tbody tr').first()).toContainText('Acre');
+  await semRolagemHorizontal(page);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

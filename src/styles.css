@@ -223,6 +223,22 @@ body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-a
 .foto { width: 80px; height: 80px; }
 @media (max-width: 420px) { .foto { width: 64px; height: 64px; } }
 
+/* 1º × 2º turno */
+#comparacao { display: grid; gap: 12px; min-width: 0; }
+.cmp-topo { display: grid; gap: 6px; }
+.cmp-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.cmp-cand { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; border-top: 4px solid var(--c); }
+.cmp-cand strong { grid-column: 1 / -1; font-size: 1.1rem; }
+.cmp-lado { display: grid; gap: 2px; }
+.grande-2 { font-size: 1.6rem; font-weight: 800; }
+.cmp-delta { grid-column: 1 / -1; font-weight: 700; }
+.sobe { color: #7FD1A8; }
+.desce { color: #FF9A9A; }
+:root[data-tema='claro'] .sobe { color: #1C7A45; }
+:root[data-tema='claro'] .desce { color: #B32828; }
+#comparacao th button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; font-weight: 600; }
+tr.mudou-lider td { background: #F6C4451A; }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }

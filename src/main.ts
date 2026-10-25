@@ -8,6 +8,7 @@ import { CAMADAS_METRICAS, CORES_CANDIDATOS, FAIXAS_VANTAGEM, TONS, type IdCamad
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
 import { compartilharImagem, gerarImagemParcial } from './ui/imagem';
+import { htmlComparacao, linhaComparacao, ordenar, UFS_COMPARACAO, type Base1T, type Coluna } from './ui/comparacao';
 import { acharMunicipio, compartilhar, municipiosDaUF, primeiroTurno, resultadoMunicipio, resumo1T, textoCompartilhar } from './ui/extras';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -494,7 +495,34 @@ function renderMapa() {
   renderTabela();
 }
 
+// ---------- 1º × 2º turno ----------
+const cmp = { iniciado: false, base: 'dois' as Base1T, col: 'df' as Coluna, desc: true, t1: new Map<string, Resultado>(), pendentes: 0, falhas: 0 };
+function iniciarComparacao() {
+  if (cmp.iniciado) return;
+  cmp.iniciado = true;
+  const todos = ['br', ...UFS_COMPARACAO].filter((a) => !cmp.t1.has(a));
+  cmp.pendentes = todos.length;
+  cmp.falhas = 0;
+  renderComparacao();
+  for (const abr of todos) {
+    void primeiroTurno(abr).then((b) => {
+      cmp.pendentes--;
+      if (b.ok) cmp.t1.set(abr, b.dados);
+      else cmp.falhas++;
+      renderComparacao();
+      if (cmp.pendentes === 0 && cmp.falhas > 0) setTimeout(() => { cmp.iniciado = false; iniciarComparacao(); }, 60_000);
+    });
+  }
+}
+function renderComparacao() {
+  if (!cmp.iniciado) return;
+  const nacional = linhaComparacao('br', cmp.t1.get('br') ?? null, estado.nacional.dados, cmp.base);
+  const linhas = ordenar(UFS_COMPARACAO.map((u) => linhaComparacao(u, cmp.t1.get(u) ?? null, resUF(u), cmp.base)), cmp.col, cmp.desc);
+  $('comparacao').innerHTML = htmlComparacao({ nacional, linhas, base: cmp.base, col: cmp.col, desc: cmp.desc, carregando: cmp.pendentes, falhas: cmp.falhas });
+}
+
 function renderTudo() {
+  renderComparacao();
   renderTopo();
   renderResumoFixo();
   renderNacional();
@@ -553,6 +581,23 @@ function iniciar() {
     eixoEvolucao = b.dataset.eixo as 'horario' | 'urnas';
     renderEvolucao();
   });
+  $('comparacao').addEventListener('click', (e) => {
+    const t = e.target as Element;
+    const b = t.closest<HTMLButtonElement>('[data-base]');
+    if (b) { cmp.base = b.dataset.base as Base1T; renderComparacao(); return; }
+    const c = t.closest<HTMLButtonElement>('[data-col]');
+    if (c) {
+      const col = c.dataset.col as Coluna;
+      cmp.desc = cmp.col === col ? !cmp.desc : col !== 'nome';
+      cmp.col = col;
+      renderComparacao();
+      $('comparacao').querySelector<HTMLButtonElement>(`[data-col="${col}"]`)?.focus();
+    }
+  });
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((ents) => { if (ents.some((x) => x.isIntersecting)) { iniciarComparacao(); io.disconnect(); } }, { rootMargin: '600px' });
+    io.observe($('sec-comparacao'));
+  } else iniciarComparacao();
   void carregarHistoricoRemoto();
   setInterval(() => { if (document.visibilityState === 'visible') void carregarHistoricoRemoto(); }, 120_000);
   $('btn-tela-cheia').addEventListener('click', async () => {
