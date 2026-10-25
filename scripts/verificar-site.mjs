@@ -12,7 +12,11 @@ if (await abrir.count()) { console.log('interstício do githack: clicando em "Op
 await p.waitForTimeout(10000);
 const status = await p.locator('[data-testid=status]').textContent().catch(() => null);
 const ufs = await p.locator('#mapa path[data-uf]').count();
-console.log(JSON.stringify({ url, status, ufs, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
+const versaoNova = await p.locator('#sel-uf').count();
+const falhas = [];
+p.on('requestfailed', (r) => falhas.push(r.url()));
+const scripts = await p.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
+console.log(JSON.stringify({ url, status, ufs, versaoNova: versaoNova > 0, scripts, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
 await p.screenshot({ path: 'site-celular.png', fullPage: false });
 await b.close();
 if (!status || status.includes('indisponíveis') || ufs !== 27 || reqs.length === 0) process.exit(1);
