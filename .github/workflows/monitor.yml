@@ -1,0 +1,55 @@
+name: monitor
+# A cada 10 minutos: baixa arquivos reais do TSE, roda os testes com eles e abre o site publicado
+# num Chromium de celular. O resultado vai para o ramo "verificacao" (status.json + monitor.log).
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: monitor, cancel-in-progress: false }
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      SITE_URL: https://raw.githack.com/kelmanymarques-cmd/urna360/site/index.html
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npx playwright install --with-deps chromium
+      - name: Baixar arquivos oficiais
+        run: |
+          mkdir -p tests/real-data
+          B=https://resultados.tse.jus.br/oficial/ele2026/6258/dados
+          for f in br/br-c0001-e006258-u.json br/br-e006258-ab.json pe/pe-c0001-e006258-u.json; do
+            curl -sS -m 30 -o tests/real-data/$(basename $f) "$B/$f" || true
+          done
+      - name: Testes unitários + dados reais
+        id: testes
+        continue-on-error: true
+        run: npx vitest run 2>&1 | tee testes.txt; exit ${PIPESTATUS[0]}
+      - name: Site publicado (celular, dados reais)
+        id: site
+        continue-on-error: true
+        run: node scripts/verificar-site.mjs "$SITE_URL" 2>&1 | tee site.txt; exit ${PIPESTATUS[0]}
+      - name: Registrar resultado
+        if: always()
+        run: |
+          node -e '
+            const fs=require("fs");
+            let br={}; try{br=JSON.parse(fs.readFileSync("tests/real-data/br-c0001-e006258-u.json","utf8"))}catch{}
+            const cands=[];for(const c of br.carg||[])for(const a of c.agr||[])for(const p of a.par||[])for(const k of p.cand||[])cands.push({n:k.n,vap:k.vap,pvap:k.pvap});
+            const s={rodadaUTC:new Date().toISOString(),testes:"${{ steps.testes.outcome }}",site:"${{ steps.site.outcome }}",
+              tse:{gerado:`${br.dg} ${br.hg}`,totalizacao:`${br.dt||""} ${br.ht||""}`.trim(),and:br.and,tf:br.tf,dv:br.dv,pst:br.s&&br.s.pst,st:br.s&&br.s.st,cands}};
+            fs.writeFileSync("/tmp/status.json",JSON.stringify(s,null,1));console.log(JSON.stringify(s));'
+          cp testes.txt site.txt site-celular.png /tmp/ 2>/dev/null || true
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/status.json status.json; cp /tmp/testes.txt monitor-testes.txt 2>/dev/null || true; cp /tmp/site.txt monitor-site.txt 2>/dev/null || true; cp /tmp/site-celular.png monitor-site.png 2>/dev/null || true
+          node -e 'const s=require("./status.json");require("fs").appendFileSync("monitor.log",`${s.rodadaUTC} testes=${s.testes} site=${s.site} and=${s.tse.and} pst=${s.tse.pst} tot=${s.tse.totalizacao}\n`)'
+          git add -A && git commit -qm "monitor $(date -u +%H:%M)" && git push -q origin verificacao
+      - name: Falhar se algo quebrou
+        if: steps.testes.outcome == 'failure' || steps.site.outcome == 'failure'
+        run: exit 1
