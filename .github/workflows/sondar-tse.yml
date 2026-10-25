@@ -1,0 +1,52 @@
+name: sondar-tse
+# Confere endereços oficiais extras (1º turno e municípios) antes de usá-los no painel.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          B=https://resultados.tse.jus.br/oficial/ele2026
+          O=/tmp/sonda.txt; : > $O
+          for u in 6257/dados/br/br-c0001-e006257-u.json 6257/dados/pe/pe-c0001-e006257-u.json 6258/config/mun-e006258-cm.json; do
+            code=$(curl -sS -m 30 -o /tmp/f.json -w '%{http_code} %{size_download}' -H 'Origin: https://raw.githack.com' "$B/$u"); echo "$code $u" >> $O
+            [ -s /tmp/f.json ] && cp /tmp/f.json "/tmp/$(basename $u)"
+          done
+          python3 - >> $O <<'PY'
+          import json
+          try:
+              d=json.load(open('/tmp/br-c0001-e006257-u.json'))
+              print('6257 br:', {k:d.get(k) for k in ['ele','t','f','tf','and','md']}, 'pst', d['s'].get('pst'))
+              for c in d['carg']:
+                  for a in c.get('agr',[]):
+                      for p in a.get('par',[]):
+                          for k in p.get('cand',[]): print('  cand', k.get('n'), k.get('nmu'), k.get('pvap'), 'e=',k.get('e'), 'st=',k.get('st'))
+          except Exception as e: print('erro 6257', e)
+          try:
+              m=json.load(open('/tmp/mun-e006258-cm.json'))
+              print('mun keys:', list(m.keys()))
+              ab=m.get('abr') or []
+              print('abr len', len(ab), 'exemplo uf keys', list(ab[0].keys()) if ab else None)
+              pe=[a for a in ab if str(a.get('cd','')).lower()=='pe']
+              if pe:
+                  mu=pe[0].get('mu',[])
+                  print('pe mu len', len(mu), 'exemplo', mu[:3])
+                  open('/tmp/mun_pe.txt','w').write(json.dumps(mu[:3]))
+          except Exception as e: print('erro mun', e)
+          PY
+          CD=$(python3 -c "import json;print(json.load(open('/tmp/mun_pe.txt'))[0]['cd'])" 2>/dev/null || true)
+          if [ -n "$CD" ]; then
+            u="6258/dados/pe/pe$CD-c0001-e006258-u.json"
+            code=$(curl -sS -m 30 -o /tmp/m.json -w '%{http_code} %{size_download}' "$B/$u"); echo "$code $u" >> $O
+            python3 -c "import json;d=json.load(open('/tmp/m.json'));print('mun file', {k:d.get(k) for k in ['ele','t','tpabr','cdabr','dt','ht','and']}, d['s'].get('pst'))" >> $O 2>&1 || true
+          fi
+          # conferir de novo o deslocamento de 1º turno para os candidatos e vice-versa em PE
+          python3 -c "import json;d=json.load(open('/tmp/pe-c0001-e006257-u.json'));print('6257 pe tpabr',d.get('tpabr'),d.get('cdabr'),'cands',[(k['n'],k['nmu'],k.get('pvap')) for c in d['carg'] for a in c['agr'] for p in a['par'] for k in p.get('cand',[])][:12])" >> $O 2>&1 || true
+          cat $O
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp $O sonda.txt && git add -A && git commit -qm "sonda TSE" && git push -q origin verificacao
