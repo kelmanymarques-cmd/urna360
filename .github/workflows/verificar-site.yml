@@ -18,5 +18,5 @@ jobs:
         run: |
           mkdir -p /tmp/ev && cp site-verificacao.txt site-celular.png /tmp/ev/ 2>/dev/null || true
           git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
-          git fetch -q origin verificacao && git checkout -q verificacao && git clean -fdxq
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
           cp /tmp/ev/* . && git add -A && git commit -qm "Verificação do site publicado" && git push -q origin verificacao
