@@ -18,6 +18,8 @@ p.on('requestfailed', (r) => falhas.push(r.url()));
 const scripts = await p.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
 console.log(JSON.stringify({ url, status, ufs, versaoNova: versaoNova > 0, scripts, respostasTSE: reqs.length, amostra: reqs.slice(0, 4) }, null, 1));
 await p.screenshot({ path: 'site-celular.png', fullPage: false });
+await p.locator('#g-evolucao').screenshot({ path: 'site-evolucao.png' }).catch(() => {});
+await p.locator('#regioes').screenshot({ path: 'site-regioes.png' }).catch(() => {});
 // Gera a imagem de compartilhamento com os dados reais (sem abrir o menu do sistema).
 try {
   await p.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));

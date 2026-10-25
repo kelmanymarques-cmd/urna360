@@ -1,6 +1,7 @@
 import './styles.css';
-import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, UFS, urlFoto, type UF } from './config';
-import { confirmados, eleicaoDefinida, lideranca, ROTULO_STATUS, statusApuracao } from './core/calc';
+import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, REGIOES, UFS, URL_HISTORICO, urlFoto, type UF } from './config';
+import { confirmados, eleicaoDefinida, lideranca, ritmo, ROTULO_STATUS, somarRegiao, statusApuracao } from './core/calc';
+import { carimbo } from './core/parse';
 import type { Resultado } from './core/types';
 import { Store, type Estado, type Entrada, type PontoHistorico } from './data/store';
 import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
@@ -121,6 +122,7 @@ function renderNacional() {
       <div class="barra" role="progressbar" aria-label="Seções totalizadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${(tot.pctTotalizadas ?? 0).toFixed(2)}"><i style="width:${tot.pctTotalizadas ?? 0}%"></i></div>
       <span class="nota num">${num(tot.totalizadas)} de ${num(tot.total)} seções · eleitorado total ${num(e.total)}</span>
       ${tot.total !== null && tot.totalizadas !== null && !r.totalizacaoFinal ? `<span class="falta num" data-testid="falta">Faltam ${num(tot.total - tot.totalizadas)} seções${e.emSecoesNaoTotalizadas !== null ? ` (${num(e.emSecoesNaoTotalizadas)} eleitores)` : ''} para totalizar.</span>` : ''}
+      ${textoRitmo()}
       <span class="falta" data-testid="nacional-1t">${primeiroTurnoTexto('br')}</span>
       ${r.definidoMatematicamente === 'eleito' && !r.totalizacaoFinal ? '<span class="chip">TSE informa: resultado matematicamente definido</span>' : ''}
     </div>
@@ -361,32 +363,111 @@ function renderProgressoUF() {
     <figcaption>Unidade: % de seções totalizadas em cada UF. Fonte: TSE.</figcaption>`;
 }
 
+// ---------- histórico combinado (coleta automática + este aparelho) ----------
+let historicoRemoto: PontoHistorico[] = [];
+async function carregarHistoricoRemoto() {
+  try {
+    const r = await fetch(`${URL_HISTORICO}?t=${Math.floor(Date.now() / 60_000)}`, { cache: 'no-store' });
+    if (!r.ok) return;
+    const j: unknown = await r.json();
+    if (!Array.isArray(j)) return;
+    historicoRemoto = j.filter((p): p is PontoHistorico => !!p && typeof p.totalizadoEm === 'string'
+      && typeof p.pctTotalizadas === 'number' && p.pctTotalizadas >= 0 && p.pctTotalizadas <= 100 && typeof p.percentuais === 'object');
+    renderEvolucao();
+    renderNacional();
+  } catch { /* opcional */ }
+}
+interface PontoT extends PontoHistorico { ms: number }
+function historicoCombinado(): PontoT[] {
+  const base = (estado.historico?.length ?? 0) >= 2 ? estado.historico! : [];
+  const mapa = new Map<string, PontoT>();
+  for (const p of [...historicoRemoto, ...base, ...historicoLocal]) {
+    const c = carimbo(p.totalizadoEm.slice(0, 10), p.totalizadoEm.slice(11));
+    if (c && !mapa.has(p.totalizadoEm)) mapa.set(p.totalizadoEm, { ...p, ms: c.ms });
+  }
+  return [...mapa.values()].sort((a, b) => a.ms - b.ms);
+}
+function textoRitmo(): string {
+  const r = ritmo(historicoCombinado().map((p) => ({ ms: p.ms, pst: p.pctTotalizadas })));
+  if (!r) return '';
+  return `<span class="falta num" data-testid="ritmo">Ritmo: ${r.pp >= 0 ? '+' : ''}${r.pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p. de seções totalizadas nos últimos ${r.minutos} min.</span>`;
+}
+
+let eixoEvolucao: 'horario' | 'urnas' = 'horario';
 function renderEvolucao() {
-  const servidor = (estado.historico?.length ?? 0) >= 2;
-  const h = (servidor ? estado.historico! : historicoLocal).filter((p) => Number.isFinite(p.pctTotalizadas));
+  const h = historicoCombinado().filter((p) => Number.isFinite(p.pctTotalizadas));
   const alvo = $('g-evolucao');
   if (h.length < 2) {
-    alvo.innerHTML = `<h3>Evolução ao longo da apuração</h3><div class="cartao vazio" data-testid="evolucao-vazia"><strong>Histórico ainda indisponível</strong><span>A série é formada só pelas totalizações oficiais que ${servidor ? 'este servidor' : 'este aparelho'} recebe, a partir de quando a página foi aberta. Aparece após a 2ª atualização do TSE. Nada é preenchido ou estimado.</span></div>
+    alvo.innerHTML = `<h3>Evolução ao longo da apuração</h3><div class="cartao vazio" data-testid="evolucao-vazia"><strong>Histórico ainda indisponível</strong><span>A série é formada só por totalizações oficiais do TSE registradas pela coleta automática e por este aparelho. Aparece a partir de 2 registros. Nada é preenchido ou estimado.</span></div>
       <figcaption>Fonte: arquivos oficiais do TSE registrados a cada nova totalização.</figcaption>`;
     return;
   }
-  const W = 560, H = 260, m = { l: 40, r: 16, t: 14, b: 30 };
-  const x = (pst: number) => m.l + (pst / 100) * (W - m.l - m.r);
-  const y = (p: number) => m.t + (1 - p / 100) * (H - m.t - m.b);
-  const grade = [0, 25, 50, 75, 100].map((g) => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(g)}" y2="${y(g)}" stroke="#22385F"></line><text x="${m.l - 6}" y="${y(g) + 4}" text-anchor="end">${g}%</text>`).join('');
-  const eixoX = [0, 25, 50, 75, 100].map((g) => `<text x="${x(g)}" y="${H - 8}" text-anchor="middle">${g}%</text>`).join('');
+  const W = 600, H = 300, m = { l: 44, r: 112, t: 16, b: 32 };
+  const porHora = eixoEvolucao === 'horario';
+  const xs = h.map((p) => (porHora ? p.ms : p.pctTotalizadas));
+  const x0 = porHora ? Math.min(...xs) : 0;
+  const x1 = porHora ? Math.max(...xs) : 100;
+  const x = (v: number) => m.l + ((v - x0) / Math.max(1, x1 - x0)) * (W - m.l - m.r);
+  const todos = h.flatMap((p) => CANDIDATOS.map((c) => p.percentuais[String(c.numero)]).filter((v): v is number => v != null));
+  const ymin = Math.max(0, Math.floor((Math.min(...todos, 50) - 2) / 5) * 5);
+  const ymax = Math.min(100, Math.ceil((Math.max(...todos, 50) + 2) / 5) * 5);
+  const y = (v: number) => m.t + (1 - (v - ymin) / (ymax - ymin)) * (H - m.t - m.b);
+  const passos = [];
+  for (let g = ymin; g <= ymax; g += (ymax - ymin) <= 20 ? 2.5 : 5) passos.push(g);
+  const grade = passos.map((g) => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(g)}" y2="${y(g)}" stroke="${g === 50 ? '#3A5280' : '#22385F'}" ${g === 50 ? 'stroke-dasharray="4 4"' : ''}></line><text x="${m.l - 6}" y="${y(g) + 4}" text-anchor="end">${g.toLocaleString('pt-BR')}%</text>`).join('');
+  let ticks: { v: number; t: string }[];
+  if (porHora) {
+    const inicio = Math.ceil(x0 / 1_800_000) * 1_800_000;
+    ticks = [];
+    for (let t = inicio; t <= x1; t += 1_800_000) {
+      const d = new Date(t - 3 * 3_600_000);
+      ticks.push({ v: t, t: `${String(d.getUTCHours()).padStart(2, '0')}h${String(d.getUTCMinutes()).padStart(2, '0')}` });
+    }
+    if (ticks.length > 8) ticks = ticks.filter((_, i) => i % 2 === 0);
+  } else ticks = [0, 25, 50, 75, 100].map((v) => ({ v, t: `${v}%` }));
+  const eixoX = ticks.map((k) => `<text x="${x(k.v)}" y="${H - 10}" text-anchor="middle">${k.t}</text>`).join('');
+  const serie = (c: (typeof CANDIDATOS)[number]) => h.filter((p) => p.percentuais[String(c.numero)] != null).map((p) => ({ x: x(porHora ? p.ms : p.pctTotalizadas), v: p.percentuais[String(c.numero)]!, p }));
   const linhas = CANDIDATOS.map((c) => {
-    const pts = h.filter((p) => p.percentuais[String(c.numero)] != null).map((p) => `${x(p.pctTotalizadas).toFixed(1)},${y(p.percentuais[String(c.numero)]!).toFixed(1)}`);
-    return pts.length ? `<polyline fill="none" stroke="${COR[c.chave]}" stroke-width="2.5" points="${pts.join(' ')}"></polyline>` : '';
+    const pts = serie(c);
+    if (!pts.length) return '';
+    const u = pts[pts.length - 1]!;
+    return `<polyline fill="none" stroke="${COR[c.chave]}" stroke-width="3" stroke-linejoin="round" points="${pts.map((q) => `${q.x.toFixed(1)},${y(q.v).toFixed(1)}`).join(' ')}"></polyline>
+      <circle cx="${u.x}" cy="${y(u.v)}" r="5" fill="${COR[c.chave]}"></circle>
+      <text x="${u.x + 10}" y="${y(u.v) + 4}" class="fim" fill="${COR[c.chave]}">${esc(c.rotulo.split(' ')[0])} ${u.v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</text>`;
   }).join('');
-  alvo.innerHTML = `<h3>Evolução do percentual oficial conforme a totalização avança</h3>
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Percentual de cada candidato em função do percentual de seções totalizadas">${grade}${eixoX}${linhas}</svg>
-    <figcaption>Eixo horizontal: % de seções totalizadas no Brasil. Eixo vertical: % oficial de cada candidato. ${h.length} totalizações oficiais registradas por ${servidor ? 'este servidor' : 'este aparelho'} desde ${esc(h[0]!.totalizadoEm)}. Pode haver lacunas entre registros.
-    <span style="color:${COR.flavio}">■</span> Flávio Bolsonaro <span style="color:${COR.lula}">■</span> Lula</figcaption>`;
+  // Viradas: quando muda quem tem mais votos entre dois registros oficiais consecutivos
+  const viradas: string[] = [];
+  for (let i = 1; i < h.length; i++) {
+    const a = h[i - 1]!, b = h[i]!;
+    const da = (a.percentuais['22'] ?? 0) - (a.percentuais['13'] ?? 0);
+    const db = (b.percentuais['22'] ?? 0) - (b.percentuais['13'] ?? 0);
+    if (da !== 0 && db !== 0 && Math.sign(da) !== Math.sign(db)) {
+      const xv = x(porHora ? b.ms : b.pctTotalizadas);
+      viradas.push(`<line x1="${xv}" x2="${xv}" y1="${m.t}" y2="${H - m.b}" stroke="#F6C445" stroke-dasharray="3 3"></line><text x="${xv + 4}" y="${m.t + 12}" class="virada">virada ${esc(b.totalizadoEm.slice(11, 16))}</text>`);
+    }
+  }
+  alvo.innerHTML = `<h3>Evolução do percentual oficial</h3>
+    <div class="eixo" role="radiogroup" aria-label="Eixo horizontal">
+      <button type="button" role="radio" data-eixo="horario" aria-checked="${porHora}">Horário</button>
+      <button type="button" role="radio" data-eixo="urnas" aria-checked="${!porHora}">% de urnas</button>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" data-testid="grafico-evolucao" aria-label="Percentual oficial de cada candidato ao longo da apuração">${grade}${eixoX}${viradas.join('')}${linhas}</svg>
+    <figcaption>${h.length} totalizações oficiais do TSE registradas desde ${esc(h[0]!.totalizadoEm.slice(11, 16))} (coleta automática e este aparelho). Eixo horizontal: ${porHora ? 'horário da totalização (Brasília)' : '% de seções totalizadas'}. Pode haver lacunas entre registros. Linhas tracejadas amarelas marcam quando um candidato passou o outro.</figcaption>`;
 }
 
 // ---------- ciclo de renderização ----------
+function renderRegioes() {
+  const linhas = REGIOES.map((rg) => {
+    const t = somarRegiao(rg.ufs, resUF);
+    const lider = t.pct.flavio === null || t.pct.lula === null ? '—' : t.votos.flavio === t.votos.lula ? 'Empate' : t.votos.flavio > t.votos.lula ? 'Flávio Bolsonaro' : 'Lula';
+    return `<tr><td>${rg.nome}</td><td>${pctTxt(t.pctTotalizadas)}</td><td>${pctTxt(t.pct.flavio)}</td><td>${pctTxt(t.pct.lula)}</td><td>${lider}</td><td>${t.ufsComDados}/${t.ufsTotal}</td></tr>`;
+  }).join('');
+  $('regioes').innerHTML = `<table data-testid="tabela-regioes"><caption class="nota" style="text-align:left;padding:8px 10px">Por região — soma dos votos oficiais das UFs (exterior não incluído). Percentual sobre os votos dos dois candidatos.</caption>
+    <thead><tr><th scope="col">Região</th><th scope="col">Totalizadas</th><th scope="col">Flávio (22)</th><th scope="col">Lula (13)</th><th scope="col">Mais votos</th><th scope="col">UFs com votos</th></tr></thead><tbody>${linhas}</tbody></table>`;
+}
+
 function renderMapa() {
+  renderRegioes();
   pintarMapa($('mapa'), { camada: ui.camada, texturas: ui.texturas, selecionada: ui.selecionada, resultado: resUF, acomp: acompUF });
   piscarUFsAtualizadas();
   renderLegenda();
@@ -444,8 +525,36 @@ function iniciar() {
     n?.click();
   });
   const sel = $<HTMLSelectElement>('sel-uf');
-  sel.insertAdjacentHTML('beforeend', [...UFS].sort((a, b) => nomeUF(a).localeCompare(nomeUF(b), 'pt-BR'))
-    .map((u) => `<option value="${u}">${esc(nomeUF(u))} (${u.toUpperCase()})</option>`).join(''));
+  sel.insertAdjacentHTML('beforeend', REGIOES.map((rg) => `<optgroup label="${rg.nome}">${[...rg.ufs]
+    .sort((a, b) => nomeUF(a).localeCompare(nomeUF(b), 'pt-BR'))
+    .map((u) => `<option value="${u}">${esc(nomeUF(u))} (${u.toUpperCase()})</option>`).join('')}</optgroup>`).join(''));
+  $('g-evolucao').addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-eixo]');
+    if (!b) return;
+    eixoEvolucao = b.dataset.eixo as 'horario' | 'urnas';
+    renderEvolucao();
+  });
+  void carregarHistoricoRemoto();
+  setInterval(() => { if (document.visibilityState === 'visible') void carregarHistoricoRemoto(); }, 120_000);
+  $('btn-tela-cheia').addEventListener('click', async () => {
+    const caixa = document.querySelector<HTMLElement>('.mapa-grade')!;
+    const ativo = caixa.classList.contains('cheia') || !!document.fullscreenElement;
+    if (ativo) {
+      caixa.classList.remove('cheia');
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+    } else {
+      try { await caixa.requestFullscreen(); } catch { /* sem suporte */ }
+      caixa.classList.add('cheia');
+    }
+    $('btn-tela-cheia').textContent = caixa.classList.contains('cheia') ? 'Sair da tela cheia' : 'Mapa em tela cheia';
+  });
+  $('btn-sair-cheia').addEventListener('click', () => $('btn-tela-cheia').click());
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      document.querySelector('.mapa-grade')?.classList.remove('cheia');
+      $('btn-tela-cheia').textContent = 'Mapa em tela cheia';
+    }
+  });
   sel.addEventListener('change', () => { ui.selecionada = sel.value || null; renderMapa(); });
   $('btn-compartilhar').addEventListener('click', async () => {
     const b = $<HTMLButtonElement>('btn-compartilhar');

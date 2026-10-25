@@ -78,3 +78,47 @@ export function eleicaoDefinida(r: Resultado | null | undefined): Eleicao {
   if (r.totalizacaoFinal && eleito) return { definido: true, motivo: 'totalizacao_final', eleito };
   return { definido: false };
 }
+
+export interface TotalRegiao {
+  secoesTotal: number; secoesTotalizadas: number; pctTotalizadas: number | null;
+  votos: Record<ChaveCandidato, number>; pct: Record<ChaveCandidato, number | null>;
+  ufsComDados: number; ufsTotal: number;
+}
+/**
+ * Soma dados OFICIAIS das UFs de uma região (não é estimativa).
+ * Percentual = votos do candidato ÷ votos somados dos dois candidatos nessas UFs.
+ */
+export function somarRegiao(ufs: readonly string[], res: (uf: string) => Resultado | null): TotalRegiao {
+  let ts = 0, st = 0, n = 0;
+  const votos = { flavio: 0, lula: 0 } as Record<ChaveCandidato, number>;
+  for (const uf of ufs) {
+    const r = res(uf);
+    if (!r) continue;
+    ts += r.secoes.total ?? 0;
+    st += r.secoes.totalizadas ?? 0;
+    if (!r.votosDisponiveis || r.simulado) continue;
+    const c = confirmados(r);
+    if (c.flavio?.votos == null || c.lula?.votos == null) continue;
+    votos.flavio += c.flavio.votos;
+    votos.lula += c.lula.votos;
+    n++;
+  }
+  const soma = votos.flavio + votos.lula;
+  return {
+    secoesTotal: ts, secoesTotalizadas: st, pctTotalizadas: ts > 0 ? (st / ts) * 100 : null,
+    votos, pct: { flavio: soma > 0 ? (votos.flavio / soma) * 100 : null, lula: soma > 0 ? (votos.lula / soma) * 100 : null },
+    ufsComDados: n, ufsTotal: ufs.length,
+  };
+}
+
+/** Avanço da totalização (pontos percentuais) na janela, a partir de pontos oficiais observados. */
+export function ritmo(pontos: { ms: number; pst: number }[], janelaMs = 10 * 60_000): { pp: number; minutos: number } | null {
+  if (pontos.length < 2) return null;
+  const ord = [...pontos].sort((a, b) => a.ms - b.ms);
+  const fim = ord[ord.length - 1]!;
+  const ini = [...ord].reverse().find((p) => p.ms <= fim.ms - janelaMs);
+  if (!ini) return null;
+  const minutos = Math.round((fim.ms - ini.ms) / 60_000);
+  if (minutos <= 0 || minutos > 30) return null;
+  return { pp: fim.pst - ini.pst, minutos };
+}

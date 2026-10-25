@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { carimbo, inteiro, pct, percentual } from '../../src/core/parse';
 import { ErroNormalizacao, normalizarAcompanhamento, normalizarResultado } from '../../src/core/normalize';
-import { eleicaoDefinida, lideranca, statusApuracao } from '../../src/core/calc';
+import { eleicaoDefinida, lideranca, ritmo, somarRegiao, statusApuracao } from '../../src/core/calc';
 import { CAMADAS_METRICAS, pintar } from '../../src/ui/camadas';
 import { ea14, ea20 } from '../fixtures/ea20';
 
@@ -212,5 +212,22 @@ describe('1º turno e municípios', () => {
     const raw = ea20({ st: 10 }) as Record<string, any>;
     raw.e.esnt = '12345';
     expect(normalizarResultado(raw, 'br').eleitorado.emSecoesNaoTotalizadas).toBe(12345);
+  });
+});
+
+describe('ritmo e soma por região (só dados oficiais)', () => {
+  it('ritmo usa o registro de ~10 min antes', () => {
+    const m = 60_000;
+    expect(ritmo([{ ms: 0, pst: 5 }, { ms: 6 * m, pst: 8 }, { ms: 12 * m, pst: 12 }])).toEqual({ pp: 7, minutos: 12 });
+    expect(ritmo([{ ms: 0, pst: 5 }, { ms: 5 * m, pst: 8 }])).toBeNull();
+    expect(ritmo([{ ms: 0, pst: 5 }, { ms: 60 * m, pst: 50 }])).toBeNull();
+  });
+  it('soma votos oficiais das UFs e ignora UFs sem votos', () => {
+    const res = (uf: string) => uf === 'xx' ? null : normalizarResultado(ea20({ abr: uf, st: uf === 'pe' ? 0 : 50, ts: 100, flavio: 30, lula: 70 }), uf);
+    const t = somarRegiao(['ba', 'pe', 'xx'], res);
+    expect(t.votos).toEqual({ flavio: 30, lula: 70 });
+    expect(t.pct.lula).toBeCloseTo(70);
+    expect(t.ufsComDados).toBe(1);
+    expect(t.pctTotalizadas).toBeCloseTo(25);
   });
 });

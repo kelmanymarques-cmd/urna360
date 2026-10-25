@@ -113,3 +113,14 @@ export function caminhoConfigMunicipios(): string {
 export function caminhoMunicipio(uf: string, cd: string): string {
   return `/${AMBIENTE}/ele${ELEICAO.ano}/${ELEICAO.codigo}/dados/${uf}/${uf}${cd}-c${ELEICAO.cargo}-e${ELEICAO.codigoArquivo}-u.json`;
 }
+
+/** Regiões do IBGE (para agrupar o seletor e somar os votos oficiais das UFs). */
+export const REGIOES: { nome: string; ufs: UF[] }[] = [
+  { nome: 'Norte', ufs: ['ac', 'ap', 'am', 'pa', 'ro', 'rr', 'to'] },
+  { nome: 'Nordeste', ufs: ['al', 'ba', 'ce', 'ma', 'pb', 'pe', 'pi', 'rn', 'se'] },
+  { nome: 'Centro-Oeste', ufs: ['df', 'go', 'mt', 'ms'] },
+  { nome: 'Sudeste', ufs: ['es', 'mg', 'rj', 'sp'] },
+  { nome: 'Sul', ufs: ['pr', 'rs', 'sc'] },
+];
+/** Histórico oficial coletado pela Action "historico" (ramo historico do repositório). */
+export const URL_HISTORICO = env.VITE_URL_HISTORICO ?? 'https://raw.githubusercontent.com/kelmanymarques-cmd/urna360/historico/historico.json';

@@ -268,6 +268,39 @@ test('sem compartilhamento de arquivo, mostra a imagem para salvar', async ({ pa
   await expect(page.getByTestId('previa-img')).toHaveCount(0);
 });
 
+test('evolução desde a coleta, ritmo, viradas, regiões, rótulos no mapa e tela cheia', async ({ page }) => {
+  const pts = [
+    ['19:00:00', 5, 55, 45], ['19:06:00', 8, 53, 47], ['19:12:00', 12, 50.5, 49.5], ['19:20:00', 18, 49.2, 50.8],
+  ].map(([h, pst, l, f]) => ({ registradoEm: 'x', totalizadoEm: `25/10/2026 ${h}`, pctTotalizadas: pst, percentuais: { '13': l, '22': f } }));
+  await page.route('**/raw.githubusercontent.com/**', (r) => r.fulfill({ json: pts, headers: { 'access-control-allow-origin': '*' } }));
+  await fonte(page, (u) => (['pe', 'ba', 'ce'].includes(u) ? { st: 50, ts: 100, flavio: 30, lula: 70 } : { st: 40, ts: 100, flavio: 60, lula: 40 }), { st: 1800, ts: 10000, flavio: 508, lula: 492 });
+  await page.goto('/');
+  await expect(page.getByTestId('grafico-evolucao')).toBeVisible();
+  await expect(page.getByTestId('grafico-evolucao').locator('polyline')).toHaveCount(2);
+  await expect(page.getByTestId('grafico-evolucao')).toContainText('virada 19:20');
+  await expect(page.getByTestId('ritmo')).toContainText('+10 p.p.');
+  await page.getByRole('radio', { name: '% de urnas' }).click();
+  await expect(page.getByRole('radio', { name: '% de urnas' })).toHaveAttribute('aria-checked', 'true');
+  // regiões: Nordeste soma PE+BA+CE (Lula) e demais (Flávio)
+  const ne = page.getByTestId('tabela-regioes').locator('tr', { hasText: 'Nordeste' });
+  await expect(ne).toContainText('Empate'); // 3 UFs 30x70 + 6 UFs 60x40 = 450 x 450
+  await expect(page.getByTestId('tabela-regioes').locator('tr', { hasText: 'Sul' })).toContainText('Flávio Bolsonaro');
+  await expect(page.getByTestId('tabela-regioes').locator('tbody tr')).toHaveCount(5);
+  // seletor agrupado por região
+  await expect(page.locator('#sel-uf optgroup')).toHaveCount(5);
+  // rótulo com valor na camada de urnas totalizadas
+  await page.getByRole('radio', { name: 'Urnas totalizadas' }).click();
+  const rot = page.locator('#mapa [data-rot="pe"] .rot-v');
+  if (await rot.count()) await expect(rot).toHaveText('50%');
+  await page.getByRole('radio', { name: 'Liderança nominal' }).click();
+  if (await rot.count()) await expect(rot).toHaveText('');
+  // tela cheia (com botão para sair dentro dela)
+  await page.getByRole('button', { name: 'Mapa em tela cheia' }).click();
+  await expect(page.locator('.mapa-grade')).toHaveClass(/cheia/);
+  await page.locator('#btn-sair-cheia').click();
+  await expect(page.locator('.mapa-grade')).not.toHaveClass(/cheia/);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

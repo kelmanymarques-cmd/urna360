@@ -1,7 +1,7 @@
 import brasil from '@svg-maps/brazil';
 import { NOMES_UF, UFS, type UF } from '../config';
 import type { AcompanhamentoAbr, Resultado } from '../core/types';
-import { pintar, type IdCamada } from './camadas';
+import { CAMADAS_METRICAS, pintar, type IdCamada } from './camadas';
 import { esc } from './format';
 
 interface Local { id: string; name: string; path: string }
@@ -61,7 +61,14 @@ export function montarMapa(raiz: HTMLElement, ev: EventosMapa) {
     t.setAttribute('text-anchor', 'middle');
     t.setAttribute('class', 'rot');
     t.setAttribute('aria-hidden', 'true');
-    t.textContent = (p.dataset.uf ?? '').toUpperCase();
+    t.dataset.rot = p.dataset.uf ?? '';
+    const sigla = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    sigla.textContent = (p.dataset.uf ?? '').toUpperCase();
+    const valor = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    valor.setAttribute('class', 'rot-v');
+    valor.setAttribute('x', String(bb.x + bb.width / 2));
+    valor.setAttribute('dy', '9');
+    t.append(sigla, valor);
     rot.appendChild(t);
   }
 
@@ -107,6 +114,12 @@ export function pintarMapa(raiz: HTMLElement, d: DadosMapa) {
     p.setAttribute('aria-label', `${NOMES_UF[uf as UF]}: ${pin.resumo}`);
     p.setAttribute('aria-pressed', String(d.selecionada === uf));
     p.classList.toggle('sel', d.selecionada === uf);
+    const v = raiz.querySelector(`[data-rot="${uf}"] .rot-v`);
+    if (v) {
+      const c = CAMADAS_METRICAS.find((x) => x.id === d.camada);
+      const val = c ? c.valor(d.resultado(uf), d.acomp(uf)) : null;
+      v.textContent = val === null ? '' : `${val.toLocaleString('pt-BR', { maximumFractionDigits: val < 10 ? 1 : 0 })}%`;
+    }
     const tex = raiz.querySelector<SVGPathElement>(`[data-tex="${uf}"]`);
     if (tex) tex.setAttribute('fill', d.texturas && pin.padrao ? `url(#tx-${pin.padrao})` : 'none');
   }
