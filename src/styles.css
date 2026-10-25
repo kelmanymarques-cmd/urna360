@@ -115,6 +115,19 @@ main { max-width: 1200px; margin: 0 auto; display: grid; gap: 28px; padding-bloc
 .botao-p { min-height: 36px; padding: 6px 12px; font-size: .85rem; }
 .botao[aria-pressed='true'] { border-color: var(--amarelo); color: var(--amarelo); }
 
+/* Resumo fixo */
+body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--fundo); z-index: 21; }
+.resumo-fixo {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 1200px; margin: 0 auto 8px;
+  display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; justify-content: center;
+  padding: 8px 14px; border-radius: 0 0 12px 12px; border: 1px solid var(--linha); border-top: 0;
+  background: #0A1730F0; backdrop-filter: blur(6px); font-size: .9rem;
+}
+.rf-c { display: inline-flex; gap: 6px; align-items: center; }
+.rf-c i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.rf-p { color: var(--texto-2); }
+.rf-p b { color: var(--amarelo); }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }

@@ -2,7 +2,7 @@ import './styles.css';
 import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, UFS, urlFoto, type UF } from './config';
 import { confirmados, lideranca, ROTULO_STATUS, statusApuracao } from './core/calc';
 import type { Resultado } from './core/types';
-import { Store, type Estado, type Entrada } from './data/store';
+import { Store, type Estado, type Entrada, type PontoHistorico } from './data/store';
 import { CAMADAS_METRICAS, CORES_CANDIDATOS, type IdCamada, pintar } from './ui/camadas';
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
@@ -245,10 +245,11 @@ function renderProgressoUF() {
 }
 
 function renderEvolucao() {
-  const h = (estado.historico ?? []).filter((p) => Number.isFinite(p.pctTotalizadas));
+  const servidor = (estado.historico?.length ?? 0) >= 2;
+  const h = (servidor ? estado.historico! : historicoLocal).filter((p) => Number.isFinite(p.pctTotalizadas));
   const alvo = $('g-evolucao');
   if (h.length < 2) {
-    alvo.innerHTML = `<h3>Evolução ao longo da apuração</h3><div class="cartao vazio" data-testid="evolucao-vazia"><strong>Histórico ainda indisponível</strong><span>A série é formada só por atualizações oficiais observadas por este servidor. Nada é preenchido ou estimado.</span></div>
+    alvo.innerHTML = `<h3>Evolução ao longo da apuração</h3><div class="cartao vazio" data-testid="evolucao-vazia"><strong>Histórico ainda indisponível</strong><span>A série é formada só pelas totalizações oficiais que ${servidor ? 'este servidor' : 'este aparelho'} recebe, a partir de quando a página foi aberta. Aparece após a 2ª atualização do TSE. Nada é preenchido ou estimado.</span></div>
       <figcaption>Fonte: arquivos oficiais do TSE registrados a cada nova totalização.</figcaption>`;
     return;
   }
@@ -263,7 +264,7 @@ function renderEvolucao() {
   }).join('');
   alvo.innerHTML = `<h3>Evolução do percentual oficial conforme a totalização avança</h3>
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Percentual de cada candidato em função do percentual de seções totalizadas">${grade}${eixoX}${linhas}</svg>
-    <figcaption>Eixo horizontal: % de seções totalizadas no Brasil. Eixo vertical: % oficial de cada candidato. ${h.length} atualizações registradas desde ${esc(h[0]!.totalizadoEm)}. Pode haver lacunas entre registros.
+    <figcaption>Eixo horizontal: % de seções totalizadas no Brasil. Eixo vertical: % oficial de cada candidato. ${h.length} totalizações oficiais registradas por ${servidor ? 'este servidor' : 'este aparelho'} desde ${esc(h[0]!.totalizadoEm)}. Pode haver lacunas entre registros.
     <span style="color:${COR.flavio}">■</span> Flávio Bolsonaro <span style="color:${COR.lula}">■</span> Lula</figcaption>`;
 }
 
@@ -277,6 +278,7 @@ function renderMapa() {
 
 function renderTudo() {
   renderTopo();
+  renderResumoFixo();
   renderNacional();
   renderMapa();
   renderProgressoUF();
@@ -345,8 +347,10 @@ function iniciar() {
   }, true);
   configurarTelaAcesa();
 
+  configurarAlertas();
   store.assinar((e, mudou) => {
     estado = e;
+    if (mudou) aoMudarNacional(e.nacional.dados);
     if (mudou || !e.consultando) renderTudo();
     else renderTopo();
   });
@@ -354,6 +358,92 @@ function iniciar() {
   store.iniciar();
   // Reavalia o aviso de "desatualizado" mesmo sem novas respostas.
   setInterval(renderTopo, 30_000);
+}
+
+// ---------- resumo fixo + título da aba ----------
+function renderResumoFixo() {
+  const r = estado.nacional.dados;
+  const el = $('resumo-fixo');
+  if (!r) { el.hidden = true; document.title = 'URNA360 · Apuração 2º turno 2026'; return; }
+  const pst = pctTxt(r.secoes.pctTotalizadas);
+  const conf = confirmados(r);
+  const partes = CANDIDATOS.map((c) => ({ c, d: conf[c.chave] }))
+    .sort((a, b) => (a.d?.seq ?? 99) - (b.d?.seq ?? 99))
+    .map(({ c, d }) => `<span class="rf-c"><i style="background:${COR[c.chave]}"></i>${esc(c.rotulo)} <b class="num">${r.votosDisponiveis ? pctTxt(d?.percentual) : TRACO}</b></span>`);
+  el.innerHTML = `<span class="rf-p"><b class="num" data-vivo="rf-pst">${pst}</b> apurado</span>${partes.join('')}`;
+  el.hidden = false;
+  document.title = `${pst} apurado · URNA360`;
+}
+
+// ---------- histórico local (só totalizações oficiais observadas por este aparelho) ----------
+const CHAVE_HIST = 'urna360.historico.6258';
+let historicoLocal: PontoHistorico[] = [];
+try {
+  const j: unknown = JSON.parse(localStorage.getItem(CHAVE_HIST) ?? '[]');
+  if (Array.isArray(j)) historicoLocal = j.filter((p): p is PontoHistorico =>
+    !!p && typeof p.totalizadoEm === 'string' && typeof p.pctTotalizadas === 'number' && typeof p.percentuais === 'object');
+} catch { /* opcional */ }
+
+function pontoDe(r: Resultado): PontoHistorico | null {
+  if (!r.votosDisponiveis || r.simulado || !r.totalizadoEm || r.secoes.pctTotalizadas === null) return null;
+  const percentuais: Record<string, number | null> = {};
+  for (const c of r.candidatos) percentuais[String(c.numero)] = c.percentual;
+  return { registradoEm: new Date().toISOString(), totalizadoEm: r.totalizadoEm.texto, pctTotalizadas: r.secoes.pctTotalizadas, percentuais };
+}
+
+let ultimaTotalizacaoVista: string | null = null;
+function aoMudarNacional(r: Resultado | null) {
+  if (!r?.totalizadoEm) return;
+  const nova = r.totalizadoEm.texto;
+  const houveAntes = ultimaTotalizacaoVista !== null;
+  if (nova === ultimaTotalizacaoVista) return;
+  ultimaTotalizacaoVista = nova;
+  const p = pontoDe(r);
+  if (p && !historicoLocal.some((x) => x.totalizadoEm === p.totalizadoEm)) {
+    historicoLocal.push(p);
+    historicoLocal.sort((a, b) => a.pctTotalizadas - b.pctTotalizadas);
+    if (historicoLocal.length > 1500) historicoLocal.shift();
+    try { localStorage.setItem(CHAVE_HIST, JSON.stringify(historicoLocal)); } catch { /* opcional */ }
+  }
+  if (houveAntes) alertar();
+}
+
+// ---------- alerta de nova totalização (vibração + som opcional; desligado por padrão) ----------
+let alertasLigados = false;
+let audio: AudioContext | null = null;
+function configurarAlertas() {
+  const btn = $<HTMLButtonElement>('btn-alerta');
+  const pintar = () => {
+    btn.setAttribute('aria-pressed', String(alertasLigados));
+    btn.textContent = alertasLigados ? 'Avisos ligados ✓' : 'Avisar novas parciais';
+  };
+  try { alertasLigados = localStorage.getItem('urna360.alertas') === '1'; } catch { /* opcional */ }
+  pintar();
+  btn.addEventListener('click', () => {
+    alertasLigados = !alertasLigados;
+    try { localStorage.setItem('urna360.alertas', alertasLigados ? '1' : '0'); } catch { /* opcional */ }
+    if (alertasLigados) {
+      try { audio ??= new AudioContext(); void audio.resume(); } catch { audio = null; }
+      alertar(); // demonstra o aviso
+    }
+    pintar();
+  });
+}
+function alertar() {
+  if (!alertasLigados) return;
+  try { navigator.vibrate?.([180, 90, 180]); } catch { /* opcional */ }
+  if (!audio) return;
+  try {
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.15, audio.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.35);
+    o.connect(g).connect(audio.destination);
+    o.start();
+    o.stop(audio.currentTime + 0.4);
+  } catch { /* opcional */ }
 }
 
 function configurarTelaAcesa() {

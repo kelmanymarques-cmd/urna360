@@ -107,6 +107,29 @@ test('em andamento: cores por liderança, neutro sem dados, detalhes e camadas',
   await page.screenshot({ path: `test-results/andamento-${info.project.name}.png`, fullPage: true });
 });
 
+test('resumo fixo, título da aba, avisos e evolução local', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('urna360.historico.6258', JSON.stringify([
+      { registradoEm: 'x', totalizadoEm: '25/10/2026 19:10:00', pctTotalizadas: 5, percentuais: { '13': 55, '22': 45 } },
+      { registradoEm: 'y', totalizadoEm: '25/10/2026 19:20:00', pctTotalizadas: 20, percentuais: { '13': 52, '22': 48 } },
+    ]));
+  });
+  await fonte(page, () => ({ st: 10, flavio: 1, lula: 3 }), { st: 2500, ts: 10000, flavio: 40, lula: 60 });
+  await page.goto('/');
+  await expect(page.getByTestId('resumo-fixo')).toContainText('25,00% apurado');
+  await expect(page.getByTestId('resumo-fixo')).toContainText('Lula 60,00%');
+  await expect(page).toHaveTitle('25,00% apurado · URNA360');
+  await expect(page.locator('#g-evolucao svg polyline')).toHaveCount(2);
+  await expect(page.locator('#g-evolucao figcaption')).toContainText('este aparelho');
+  await page.getByRole('button', { name: 'Avisar novas parciais' }).click();
+  await expect(page.locator('#btn-alerta')).toHaveAttribute('aria-pressed', 'true');
+  // o resumo continua visível depois de rolar até o mapa
+  await page.locator('#t-graficos').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('resumo-fixo')).toBeInViewport();
+  await page.screenshot({ path: `test-results/resumo-rolado-${test.info().project.name}.png` });
+  await semRolagemHorizontal(page);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');
