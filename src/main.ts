@@ -49,6 +49,11 @@ function renderTopo() {
   }
   if (erro && !r) av.push(`<div class="aviso erro" data-testid="aviso-erro">Dados indisponíveis. ${esc(erro.mensagem)} Nova tentativa automática às ${hora(estado.proximaConsultaEm)}.</div>`);
   if (r && r.divulgacaoAutorizada === false) av.push(`<div class="aviso info">O TSE ainda não liberou a divulgação dos votos. Os votos aparecerão quando forem publicados.</div>`);
+  // Fato verificável: há quanto tempo o TSE não publica nova totalização (sem especular o motivo).
+  if (r && statusApuracao(r) === 'em_andamento' && r.totalizadoEm && Date.now() - r.totalizadoEm.ms > 15 * 60_000) {
+    const min = Math.floor((Date.now() - r.totalizadoEm.ms) / 60_000);
+    av.push(`<div class="aviso info" data-testid="aviso-sem-totalizacao">O TSE não publica nova totalização desde ${esc(r.totalizadoEm.texto.slice(11, 16))} (há ${min} min). Os números abaixo são os últimos divulgados e serão atualizados assim que o TSE publicar.</div>`);
+  }
   if (r?.motivoSemTotalizacaoFinal) av.push(`<div class="aviso info">TSE: ${esc(r.motivoSemTotalizacaoFinal)}</div>`);
   $('avisos').innerHTML = av.join('');
 }

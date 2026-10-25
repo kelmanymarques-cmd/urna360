@@ -107,6 +107,13 @@ test('em andamento: cores por liderança, neutro sem dados, detalhes e camadas',
   await page.screenshot({ path: `test-results/andamento-${info.project.name}.png`, fullPage: true });
 });
 
+test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
+  await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
+  await page.goto('/');
+  await expect(page.getByTestId('aviso-sem-totalizacao')).toContainText('desde 17:06');
+  await expect(page.getByTestId('pct-13')).toHaveText('66,67%');
+});
+
 test('arquivo de simulação do TSE é sinalizado e não colore o mapa', async ({ page }) => {
   await fonte(page, () => ({ f: 's', st: 10, flavio: 9, lula: 1 }), { f: 's', st: 10, flavio: 9, lula: 1 }, ea14([], { f: 's' }));
   await page.goto('/');
