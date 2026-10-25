@@ -17,7 +17,9 @@ Painel responsivo para acompanhar a apuração do **2º turno presidencial de 25
 | Limites | 100 req/s por IP; excesso → bloqueio de 10 min; muitos 404 → bloqueio; ETag/Last-Modified aceitos | documentação |
 | Atualização | sem cadência fixa ("conforme a evolução da totalização") | documentação |
 
-**Como foi lido:** os arquivos foram consultados com uma ferramenta de busca web que resume o conteúdo. Por isso, os valores acima são transcrições. O acesso direto pelo terminal deste ambiente foi bloqueado (proxy 403). Os arquivos reais brutos são baixados e testados pela Action `verificar-tse` (veja abaixo).
+**Verificação com arquivos brutos (25/10/2026 18:48 UTC = 15:48 Brasília), pela Action `verificar-tse`:** os arquivos `br-c0001-e006258-u.json`, `br-e006258-ab.json` e `pe-c0001-e006258-u.json` foram baixados do TSE e normalizados pelo código do app **sem nenhum aviso de campo desconhecido**. Resultado: candidatos 22 e 13 confirmados, status "aguardando", 0 de 499.248 seções e 28 abrangências no EA14 (27 UFs + `zz`). As evidências (arquivos + cabeçalhos HTTP) ficam no ramo `verificacao`.
+
+**Cabeçalhos HTTP reais:** `cache-control: max-age=42`, `etag`, `last-modified`, `x-ratelimit-limit: 5000`. **CORS:** `access-control-allow-origin` devolve a origem pedida (`https://kelmanymarques-cmd.github.io`) com `vary: Origin`. Ou seja, o navegador pode ler os arquivos direto do TSE, e a versão estática no GitHub Pages funciona sem proxy.
 
 ### Regras da especificação que afetam o painel
 - `dv="n"`: o TSE publica os votos **zerados**. O painel trata esses votos como indisponíveis, nunca como 0%.
@@ -60,11 +62,9 @@ Variáveis: `PORT`, `TSE_ORIGEM`, `CACHE_TTL_MS`, `HISTORICO_ARQUIVO` (servidor)
 - **Unitários: 43/43 passando.** Cobrem normalização, campos ausentes/negativos/desconhecidos, percentuais e divisão por zero, `dv=n`, liderança (vitória de cada candidato, empate, neutro), separação de brancos/nulos/abstenção, eleição ou UF divergente, simulação, timeout, falha de rede, HTTP 4xx/5xx, arquivo vazio, JSON inválido, dado repetido, arquivo mais antigo, polling sem duplicidade e proxy (lista branca, coalescência, último dado válido, cache de 404, histórico).
 - **Interface: 15/15 passando** (5 cenários × desktop 1366 px, Pixel 7 e tablet 820 px). Cobrem anti-fabricação, aguardando, andamento com cores e neutros, clique e teclado, camadas, tabela com 28 linhas, sem rolagem horizontal, simulação e eleição errada.
 - **Anti-fabricação:** fixtures só existem em `tests/fixtures`. `npm run build` falha se o marcador de fixture aparecer em `dist/`. Sem fonte, o build mostra "Dados indisponíveis".
-- **Dados reais:** `tests/unit/real.test.ts` roda com os arquivos baixados pela Action `verificar-tse` e é pulado quando eles não existem.
+- **Dados reais: 3/3 passando** (`tests/unit/real.test.ts`, executado na Action `verificar-tse` com arquivos baixados do TSE em 25/10/2026 15:48). Localmente, sem os arquivos, os testes são pulados.
 
 ## Pendente / não validado
-- Leitura dos arquivos **brutos** reais pelo app (só a Action consegue baixar daqui).
-- CORS do TSE para leitura direta pelo navegador (a Action registra os cabeçalhos).
 - Assinaturas JWS dos arquivos (manual do TSE) ainda não são verificadas.
 - Comportamento real durante a apuração (17h em diante): comparar amostras com o portal do TSE.
 - Fuso dos horários não declarado na especificação.
