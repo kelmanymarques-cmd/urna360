@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           U=https://raw.githack.com/kelmanymarques-cmd/urna360/site/index.html
-          { echo "== $(date -u +%FT%TZ)"; curl -sS -D - -o /tmp/i.html "$U" | grep -iE 'HTTP/|cache|age|etag|last-mod|expires'; grep -o 'assets/[^"]*\.js' /tmp/i.html; } > /tmp/pub.txt
+          { echo "== $(date -u +%FT%TZ)"; curl -sS -D - -o /tmp/i.html "$U" | grep -iE 'HTTP/|cache|age|etag|last-mod|expires'; grep -o 'assets/[^"]*\.js' /tmp/i.html; grep -c 'Carregador' /tmp/i.html; } > /tmp/pub.txt
           JS=$(grep -o 'assets/[^"]*\.js' /tmp/i.html | head -1)
           curl -sS "https://raw.githack.com/kelmanymarques-cmd/urna360/site/$JS" | grep -c 'desmarcar' >> /tmp/pub.txt || echo 0 >> /tmp/pub.txt
           cat /tmp/pub.txt
