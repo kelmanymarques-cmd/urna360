@@ -17,6 +17,7 @@
   --lula: #D93A3A;
   --neutro: #24314F;
   --raio: 14px;
+  --largura: 1760px; /* conteúdo usa quase toda a tela em monitores largos */
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --fonte-num: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
   --trilha: #0A1730;
@@ -70,7 +71,7 @@ h1, h2, h3 { line-height: 1.15; text-wrap: balance; margin: 0; }
 .num, .tab { font-variant-numeric: tabular-nums; }
 
 .topo {
-  max-width: 1200px; margin: 0 auto; padding-block: 20px 12px;
+  max-width: var(--largura); margin: 0 auto; padding-block: 20px 12px;
   display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
 }
 .marca { display: flex; gap: 12px; align-items: center; }
@@ -88,7 +89,7 @@ h1, h2, h3 { line-height: 1.15; text-wrap: balance; margin: 0; }
 .pilula.indisponivel::before { background: var(--erro); }
 @keyframes pulso { 50% { opacity: .35; } }
 
-.avisos { max-width: 1200px; margin: 0 auto; display: grid; gap: 8px; }
+.avisos { max-width: var(--largura); margin: 0 auto; display: grid; gap: 8px; }
 .aviso { border-radius: 10px; padding: 10px 14px; border: 1px solid; font-size: .92rem; }
 .aviso.info { border-color: var(--info-borda); background: var(--info-bg); }
 .aviso.alerta { border-color: var(--alerta-borda); background: var(--alerta-bg); color: var(--alerta-fg); }
@@ -97,7 +98,7 @@ h1, h2, h3 { line-height: 1.15; text-wrap: balance; margin: 0; }
 .aviso.eleito strong { font-size: 1.25rem; color: var(--destaque-texto); }
 .aviso.simulado { border-color: var(--amarelo); background: var(--sim-bg); color: var(--sim-fg); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 
-main { max-width: 1200px; margin: 0 auto; display: grid; gap: 28px; padding-block: 16px 32px; }
+main { max-width: var(--largura); margin: 0 auto; display: grid; gap: 28px; padding-block: 16px 32px; }
 .bloco { display: grid; gap: 16px; min-width: 0; }
 .bloco-cab { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
 .bloco-cab h2 { font-size: 1.3rem; }
@@ -150,7 +151,7 @@ main { max-width: 1200px; margin: 0 auto; display: grid; gap: 28px; padding-bloc
 /* Resumo fixo */
 body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--fundo); z-index: 21; }
 .resumo-fixo {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 1200px; margin: 0 auto 8px;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: var(--largura); margin: 0 auto 8px;
   display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; justify-content: center;
   padding: 8px 14px; border-radius: 0 0 12px 12px; border: 1px solid var(--linha); border-top: 0;
   background: var(--vidro); backdrop-filter: blur(6px); font-size: .9rem;
@@ -319,7 +320,7 @@ thead th { position: sticky; top: 0; background: var(--fundo-2); color: var(--te
 .barras-uf .t { height: 10px; background: var(--trilha); border-radius: 99px; overflow: hidden; }
 .barras-uf .t > i { display: block; height: 100%; background: var(--azul); }
 
-.rodape { max-width: 1200px; margin: 0 auto; padding-block: 24px 40px; border-top: 1px solid var(--linha); color: var(--texto-2); font-size: .88rem; display: grid; gap: 12px; }
+.rodape { max-width: var(--largura); margin: 0 auto; padding-block: 24px 40px; border-top: 1px solid var(--linha); color: var(--texto-2); font-size: .88rem; display: grid; gap: 12px; }
 .rodape h2 { font-size: 1rem; color: var(--texto); margin-bottom: 6px; }
 .rodape ul { margin: 6px 0; padding-left: 18px; }
 .rodape p { margin: 0; max-width: 80ch; }

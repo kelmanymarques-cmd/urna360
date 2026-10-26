@@ -356,6 +356,21 @@ test('conta da vitória: falta para garantir e cenário', async ({ page }) => {
   await expect(page.getByTestId('cv-cenario')).toContainText('62,5%');
 });
 
+test('telas largas: conteúdo usa a largura e as tabelas não precisam de rolagem lateral', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'só desktop');
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await fonte(page, (u) => (u === 'pe' ? { st: 60, ts: 100, flavio: 300, lula: 700 } : { st: 40, ts: 100, flavio: 600, lula: 400 }), { st: 4000, ts: 10000, flavio: 520, lula: 480 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-22')).toHaveText('52,00%');
+  const largura = await page.evaluate(() => document.querySelector('main')!.getBoundingClientRect().width);
+  expect(largura).toBeGreaterThan(1700);
+  await page.locator('#sec-analise').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('tabela-analise').locator('tbody tr')).toHaveCount(27);
+  const rolam = await page.evaluate(() => [...document.querySelectorAll('.tabela-caixa')]
+    .filter((c) => (c as HTMLElement).offsetParent !== null && c.scrollWidth > c.clientWidth + 1).map((c) => c.querySelector('table')?.dataset.testid));
+  expect(rolam).toEqual([]);
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');
