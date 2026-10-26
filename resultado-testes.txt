@@ -1,0 +1,19 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90m/home/runner/work/urna360/urna360[39m
+
+[90mstdout[2m | tests/unit/real.test.ts[2m > [22m[2marquivos reais do TSE (eleição 6258)[2m > [22m[2mnacional normaliza e confirma os candidatos 22 e 13
+[22m[39mREAL br: {"status":"em_andamento","gerado":"25/10/2026 21:31:51","tot":"25/10/2026 21:31:40","secoes":{"total":499248,"totalizadas":498703,"pctTotalizadas":99.890835817},"votosDisponiveis":true,"cands":[[13,"LULA",64164036,51.766248749],[22,"FLAVIO BOLSONARO",59785521,48.233751251]],"brancos":1.115642836,"nulos":2.12351502,"abst":19.208635051,"avisos":[]}
+
+[90mstdout[2m | tests/unit/real.test.ts[2m > [22m[2marquivos reais do TSE (eleição 6258)[2m > [22m[2macompanhamento lista 27 UFs + exterior
+[22m[39mREAL ab: ac,al,am,ap,ba,ce,df,es,go,ma,mg,ms,mt,pa,pb,pe,pi,pr,rj,rn,ro,rr,rs,sc,se,sp,to,zz
+
+[90mstdout[2m | tests/unit/real.test.ts[2m > [22m[2marquivos reais do TSE (eleição 6258)[2m > [22m[2mUF (PE) normaliza
+[22m[39mREAL pe: {"secoes":{"total":21418,"totalizadas":21364,"pctTotalizadas":99.747875619},"lid":{"estado":"lula","diferencaVotos":2277770},"avisos":[]}
+
+ [32m✓[39m tests/unit/real.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 00:33:04
+[2m   Duration [22m 510ms[2m (transform 71ms, setup 0ms, collect 85ms, tests 5ms, environment 244ms, prepare 47ms)[22m
+

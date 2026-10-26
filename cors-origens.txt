@@ -1,0 +1,6 @@
+=== Origin https://rawcdn.githack.com
+access-control-allow-origin: https://rawcdn.githack.com
+=== Origin https://raw.githack.com
+access-control-allow-origin: https://raw.githack.com
+=== Origin https://exemplo-qualquer.com
+access-control-allow-origin: https://exemplo-qualquer.com

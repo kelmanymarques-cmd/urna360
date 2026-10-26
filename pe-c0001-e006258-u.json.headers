@@ -1,0 +1,20 @@
+HTTP/2 200 
+x-amz-server-side-encryption: AES256
+last-modified: Mon, 26 Oct 2026 00:32:18 GMT
+etag: "694686209b7b1840e1a3e23d8dbb27aa"
+x-amz-request-id: tx0000013dd016bd59d033e-006ade9f93-cffe16-default
+x-ratelimit-limit: 5000, 5000;w=1
+x-ratelimit-remaining: 4925
+x-ratelimit-reset: 1
+cache-control: max-age=26
+expires: Mon, 26 Oct 2026 00:33:28 GMT
+date: Mon, 26 Oct 2026 00:33:02 GMT
+content-length: 3179
+alt-svc: h3=":443"; ma=93600
+content-type: application/json
+strict-transport-security: max-age=63072000 ; includeSubDomains ; preload
+akamai-grn: 0.070cc417.1792974782.7b4bab01
+cdn-cache-status: Hit from child
+access-control-allow-origin: https://kelmanymarques-cmd.github.io
+vary: Origin
+

@@ -1,0 +1,5 @@
+=== Fotos (sqcand do arquivo oficial)
+200 image/jpeg 6753 https://resultados.tse.jus.br/oficial/ele2026/6258/fotos/br/280002551544.jpeg
+404 application/xml 248 https://resultados.tse.jus.br/oficial/ele2026/fotos/br/280002551544.jpeg
+200 image/jpeg 6969 https://resultados.tse.jus.br/oficial/ele2026/6258/fotos/br/280002542548.jpeg
+404 application/xml 248 https://resultados.tse.jus.br/oficial/ele2026/fotos/br/280002542548.jpeg
