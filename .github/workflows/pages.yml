@@ -1,10 +1,10 @@
 name: pages
 # Publica o build estático no GitHub Pages. Sem proxy: o navegador lê os arquivos
 # direto do TSE (só funciona se o TSE permitir CORS — ver Action verificar-tse).
+# Só manual: o GitHub Pages precisa ser ativado em Settings → Pages (Source: GitHub Actions).
+# Enquanto não estiver ativado, a publicação usada é o ramo "site" (ver README).
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 permissions:
   contents: read
   pages: write

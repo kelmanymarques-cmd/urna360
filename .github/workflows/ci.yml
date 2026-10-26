@@ -1,5 +1,7 @@
 name: ci
 on: [push, pull_request]
+permissions:
+  contents: write
 jobs:
   testes:
     runs-on: ubuntu-latest
@@ -11,4 +13,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm test
       - run: npm run build
-      - run: npm run test:e2e
+      - run: npm run test:e2e 2>&1 | tee e2e.txt; exit ${PIPESTATUS[0]}
+      - name: Guardar relatório se falhar
+        if: failure()
+        run: |
+          mkdir -p /tmp/ev && cp e2e.txt /tmp/ev/ci-e2e.txt 2>/dev/null || true
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/ev/* . && git add -A && git commit -qm "relatório CI" && git push -q origin verificacao || true

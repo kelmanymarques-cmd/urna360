@@ -30,6 +30,12 @@ async function fonte(page: Page, porUF: (uf: string) => OpcoesEA20 | null, nacio
   });
 }
 
+// Testes herméticos: nenhuma chamada real ao TSE ou ao histórico do GitHub (no CI há internet).
+// Rotas registradas depois, dentro de cada teste, têm prioridade sobre esta.
+test.beforeEach(async ({ page }) => {
+  await page.route(/resultados\.tse\.jus\.br|raw\.githubusercontent\.com|cdn\.jsdelivr\.net|api\.github\.com/, (r) => r.abort());
+});
+
 async function semRolagemHorizontal(page: Page) {
   const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
   expect(sw).toBeLessThanOrEqual(iw + 1);
