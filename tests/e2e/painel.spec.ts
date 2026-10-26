@@ -371,6 +371,27 @@ test('telas largas: conteúdo usa a largura e as tabelas não precisam de rolage
   expect(rolam).toEqual([]);
 });
 
+test('responsivo: de 320 a 2560 px sem rolagem lateral, topo sem sobreposição e indicadores inteiros', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'larguras definidas no próprio teste');
+  await fonte(page, (u) => (u === 'pe' ? { st: 60, ts: 100, flavio: 300, lula: 700 } : { st: 40, ts: 100, flavio: 600, lula: 400 }), { st: 4000, ts: 10000, flavio: 59816118, lula: 64235740, vb: 1800000, vn: 3500000, c: 129000000, a: 27000000, te: 156000000 });
+  await page.goto('/');
+  await expect(page.getByTestId('pct-22')).not.toHaveText('—');
+  for (const w of [320, 375, 414, 768, 1024, 1280, 1920, 2560]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.waitForTimeout(150);
+    const r = await page.evaluate(() => {
+      const caixa = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+      const m = caixa('.marca h1'), a = caixa('.topo-acoes'), sub = caixa('.sub');
+      const sobrepoe = (x: DOMRect, y: DOMRect) => x.right > y.left + 1 && x.left < y.right - 1 && x.bottom > y.top + 1 && x.top < y.bottom - 1;
+      const quebrados = [...document.querySelectorAll('.ind .v')].filter((v) => v.getBoundingClientRect().height > parseFloat(getComputedStyle(v).lineHeight) * 1.5).length;
+      return { sw: document.documentElement.scrollWidth, iw: innerWidth, sobre: sobrepoe(m, a) || sobrepoe(sub, a), quebrados };
+    });
+    expect(r.sw, `rolagem lateral em ${w}px`).toBeLessThanOrEqual(r.iw + 1);
+    expect(r.sobre, `topo sobreposto em ${w}px`).toBe(false);
+    expect(r.quebrados, `número de indicador quebrado em ${w}px`).toBe(0);
+  }
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

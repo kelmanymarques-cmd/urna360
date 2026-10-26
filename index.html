@@ -25,15 +25,15 @@
         </svg>
         <div>
           <h1>URNA<span>360</span></h1>
-          <p class="sub">Apuração · Presidente · 2º turno · 25/10/2026</p>
+          <p class="sub"><span class="sub-a">Apuração · </span><span class="sub-b">Presidente · </span>2º turno · 25/10/2026</p>
         </div>
       </div>
-      <div class="topo-dir">
-        <div class="estado-fonte" id="estado-fonte" role="status" aria-live="polite"></div>
-        <button type="button" class="botao botao-p" id="btn-tela" aria-pressed="false" hidden>Manter tela acesa</button>
-        <button type="button" class="botao botao-p" id="btn-alerta" aria-pressed="false">Avisar novas parciais</button>
-        <button type="button" class="botao botao-p" id="btn-compartilhar">Compartilhar parcial</button>
-        <button type="button" class="botao botao-p" id="btn-tema" aria-pressed="false">Tema claro</button>
+      <div class="estado-fonte" id="estado-fonte" role="status" aria-live="polite"></div>
+      <div class="topo-acoes">
+        <button type="button" class="botao botao-p botao-ico" id="btn-tela" aria-pressed="false" title="Manter tela acesa" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span class="btn-txt">Manter tela acesa</span></button>
+        <button type="button" class="botao botao-p botao-ico" id="btn-alerta" aria-pressed="false" title="Avisar novas parciais"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="btn-txt">Avisar novas parciais</span></button>
+        <button type="button" class="botao botao-p botao-ico" id="btn-compartilhar" title="Compartilhar parcial"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span class="btn-txt">Compartilhar parcial</span></button>
+        <button type="button" class="botao botao-p botao-ico" id="btn-tema" aria-pressed="false" title="Tema claro"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg><span class="btn-txt">Tema claro</span></button>
       </div>
     </header>
 
@@ -67,14 +67,14 @@
             <label class="escolher-uf" for="sel-uf">Escolher estado
               <select id="sel-uf"><option value="">— nenhum —</option></select>
             </label>
+            <div class="acoes-mapa">
+              <button type="button" class="botao" id="btn-tela-cheia">Mapa em tela cheia</button>
+              <button type="button" class="botao" id="btn-tabela" aria-expanded="false" aria-controls="tabela-ufs">Ver dados em tabela</button>
+              <label class="alternar"><input type="checkbox" id="padroes" /> Texturas para diferenciar sem depender de cor</label>
+            </div>
             <div id="detalhe" class="detalhe" aria-live="polite"></div>
             <div id="detalhe-extra" class="extra"></div>
           </aside>
-        </div>
-        <div class="acoes-mapa">
-          <label class="alternar"><input type="checkbox" id="padroes" /> Texturas para diferenciar sem depender de cor</label>
-          <button type="button" class="botao" id="btn-tela-cheia">Mapa em tela cheia</button>
-          <button type="button" class="botao" id="btn-tabela" aria-expanded="false" aria-controls="tabela-ufs">Ver dados em tabela</button>
         </div>
         <div id="regioes" class="tabela-caixa"></div>
         <div id="tabela-ufs" class="tabela-caixa" hidden></div>

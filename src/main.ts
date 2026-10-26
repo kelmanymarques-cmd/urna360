@@ -34,7 +34,44 @@ const nomeUF = (uf: string) => NOMES_UF[uf as UF] ?? uf.toUpperCase();
 const resUF = (uf: string): Resultado | null => estado.abrangencias[uf]?.dados ?? null;
 const acompUF = (uf: string) => estado.acompanhamento.dados?.abrangencias.find((a) => a.abrangencia === uf) ?? null;
 
+
+// ---------- dica de rolagem lateral nas tabelas ----------
+/** Mostra "arraste para o lado" acima de cada tabela que não cabe na tela (comum no celular). */
+function dicasDeRolagem() {
+  const avaliar = (caixa: HTMLElement) => {
+    let dica = caixa.previousElementSibling as HTMLElement | null;
+    if (!dica?.classList.contains('dica-rolar')) {
+      dica = document.createElement('p');
+      dica.className = 'dica-rolar';
+      dica.setAttribute('aria-hidden', 'true');
+      dica.textContent = '↔ Arraste a tabela para o lado para ver todas as colunas';
+      caixa.before(dica);
+    }
+    const rola = caixa.scrollWidth > caixa.clientWidth + 1 && caixa.offsetParent !== null;
+    dica.toggleAttribute('data-ativa', rola);
+    caixa.toggleAttribute('data-rola', rola);
+  };
+  const ro = new ResizeObserver((es) => es.forEach((e) => avaliar(e.target as HTMLElement)));
+  const vistos = new WeakSet<Element>();
+  const varrer = () => document.querySelectorAll<HTMLElement>('.tabela-caixa').forEach((c) => {
+    if (!vistos.has(c)) { vistos.add(c); ro.observe(c); }
+    avaliar(c);
+  });
+  let pendente = 0;
+  new MutationObserver(() => { cancelAnimationFrame(pendente); pendente = requestAnimationFrame(varrer); })
+    .observe(document.querySelector('main')!, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  varrer();
+}
+
 // ---------- cabeçalho / avisos ----------
+/** Texto dos botões do topo (que no celular mostram só o ícone). Mensagens passageiras aparecem por extenso. */
+function rotuloBotao(b: HTMLElement, texto: string, passageiro = false) {
+  const alvo = b.querySelector('.btn-txt') ?? b;
+  alvo.textContent = texto;
+  b.title = texto;
+  b.classList.toggle('falando', passageiro);
+}
+
 function renderTopo() {
   const r = estado.nacional.dados;
   const st = r ? statusApuracao(r) : estado.nacional.ultimoErro ? 'indisponivel' : null;
@@ -116,8 +153,8 @@ function renderNacional() {
 
   const v = r.votos;
   const e = r.eleitorado;
-  const ind = (rotulo: string, valor: string, desc: string, id: string, pctBarra?: number | null) =>
-    `<div class="cartao ind" data-testid="ind-${id}"><span class="rotulo">${rotulo}</span><span class="v num">${valor}</span>${pctBarra != null ? `<span class="mini" aria-hidden="true"><i style="width:${Math.min(100, (pctBarra / 25) * 100)}%"></i></span>` : ''}<span class="d">${desc}</span></div>`;
+  const ind = (rotulo: string, valor: string, desc: string, id: string, pctBarra?: number | null, qtd?: string) =>
+    `<div class="cartao ind" data-testid="ind-${id}"><span class="rotulo">${rotulo}</span><span class="v num">${valor}</span>${qtd ? `<span class="q num">${qtd}</span>` : ''}${pctBarra != null ? `<span class="mini" aria-hidden="true"><i style="width:${Math.min(100, (pctBarra / 25) * 100)}%"></i></span>` : ''}<span class="d">${desc}</span></div>`;
   const tot = r.secoes;
   renderComDestaque(alvo, `<div class="nacional">
     <div class="cartao progresso">
@@ -135,10 +172,10 @@ function renderNacional() {
     ${htmlConsolidacao(r)}
     <div class="indicadores">
       ${ind('Votos válidos', num(v.validos), 'Votos nominais dos candidatos', 'validos')}
-      ${ind('Brancos', r.votosDisponiveis ? `${num(v.brancos)} · ${pctTxt(v.pctBrancos)}` : TRACO, '% sobre o total de votos · barra: 0 a 25%', 'brancos', r.votosDisponiveis ? v.pctBrancos : null)}
-      ${ind('Nulos', r.votosDisponiveis ? `${num(v.nulos)} · ${pctTxt(v.pctNulos)}` : TRACO, '% sobre o total de votos (inclui nulos técnicos) · barra: 0 a 25%', 'nulos', r.votosDisponiveis ? v.pctNulos : null)}
-      ${ind('Comparecimento', e.comparecimento !== null ? `${num(e.comparecimento)} · ${pctTxt(e.pctComparecimento)}` : TRACO, '% sobre o eleitorado das seções totalizadas', 'comparecimento')}
-      ${ind('Abstenção', e.abstencao !== null ? `${num(e.abstencao)} · ${pctTxt(e.pctAbstencao)}` : TRACO, '% sobre o eleitorado das seções totalizadas · barra: 0 a 25%', 'abstencao', e.pctAbstencao)}
+      ${ind('Brancos', r.votosDisponiveis ? pctTxt(v.pctBrancos) : TRACO, '% sobre o total de votos · barra: 0 a 25%', 'brancos', r.votosDisponiveis ? v.pctBrancos : null, r.votosDisponiveis ? `${num(v.brancos)} votos` : undefined)}
+      ${ind('Nulos', r.votosDisponiveis ? pctTxt(v.pctNulos) : TRACO, '% sobre o total de votos (inclui nulos técnicos) · barra: 0 a 25%', 'nulos', r.votosDisponiveis ? v.pctNulos : null, r.votosDisponiveis ? `${num(v.nulos)} votos` : undefined)}
+      ${ind('Comparecimento', e.comparecimento !== null ? pctTxt(e.pctComparecimento) : TRACO, '% sobre o eleitorado das seções totalizadas', 'comparecimento', undefined, e.comparecimento !== null ? `${num(e.comparecimento)} eleitores` : undefined)}
+      ${ind('Abstenção', e.abstencao !== null ? pctTxt(e.pctAbstencao) : TRACO, '% sobre o eleitorado das seções totalizadas · barra: 0 a 25%', 'abstencao', e.pctAbstencao, e.abstencao !== null ? `${num(e.abstencao)} eleitores` : undefined)}
     </div>
     <div class="carimbos">
       <span>Arquivo gerado pelo TSE: <b class="num">${esc(r.geradoEm?.texto ?? TRACO)}</b></span>
@@ -561,6 +598,7 @@ function renderTudo() {
 
 function iniciar() {
   renderCamadas();
+  dicasDeRolagem();
   ($('padroes') as HTMLInputElement).checked = ui.texturas;
   montarMapa($('mapa'), {
     selecionar(uf) {
@@ -652,25 +690,25 @@ function iniciar() {
   $('btn-compartilhar').addEventListener('click', async () => {
     const b = $<HTMLButtonElement>('btn-compartilhar');
     const r = estado.nacional.dados;
-    if (!r) { b.textContent = 'Sem dados ainda'; setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500); return; }
-    b.textContent = 'Gerando imagem…';
+    if (!r) { rotuloBotao(b, 'Sem dados ainda', true); setTimeout(() => rotuloBotao(b, 'Compartilhar parcial'), 2500); return; }
+    rotuloBotao(b, 'Gerando imagem…', true);
     b.disabled = true;
     try {
       const blob = await gerarImagemParcial({ nacional: r, resultadoUF: resUF, url: location.href });
       const res = await compartilharImagem(blob, textoCompartilhar(r, location.href));
-      b.textContent = res === 'compartilhado' ? 'Compartilhado ✓' : 'Compartilhar parcial';
+      rotuloBotao(b, res === 'compartilhado' ? 'Compartilhado ✓' : 'Compartilhar parcial', res === 'compartilhado');
     } catch {
       const res = await compartilhar(textoCompartilhar(r, location.href));
-      b.textContent = res === 'copiado' ? 'Texto copiado ✓' : res === 'compartilhado' ? 'Compartilhado ✓' : 'Não foi possível';
+      rotuloBotao(b, res === 'copiado' ? 'Texto copiado ✓' : res === 'compartilhado' ? 'Compartilhado ✓' : 'Não foi possível', true);
     }
     b.disabled = false;
-    setTimeout(() => (b.textContent = 'Compartilhar parcial'), 2500);
+    setTimeout(() => rotuloBotao(b, 'Compartilhar parcial'), 2500);
   });
   const aplicarTema = (claro: boolean) => {
     if (claro) document.documentElement.setAttribute('data-tema', 'claro');
     else document.documentElement.removeAttribute('data-tema');
     const bt = $<HTMLButtonElement>('btn-tema');
-    bt.textContent = claro ? 'Tema escuro' : 'Tema claro';
+    rotuloBotao(bt, claro ? 'Tema escuro' : 'Tema claro');
     bt.setAttribute('aria-pressed', String(claro));
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', claro ? '#F3F5FA' : '#071226');
   };
@@ -886,7 +924,7 @@ function configurarAlertas() {
   const btn = $<HTMLButtonElement>('btn-alerta');
   const pintar = () => {
     btn.setAttribute('aria-pressed', String(alertasLigados));
-    btn.textContent = alertasLigados ? 'Avisos ligados ✓' : 'Avisar novas parciais';
+    rotuloBotao(btn, alertasLigados ? 'Avisos ligados ✓' : 'Avisar novas parciais');
   };
   try { alertasLigados = localStorage.getItem('urna360.alertas') === '1'; } catch { /* opcional */ }
   pintar();
@@ -927,13 +965,13 @@ function configurarTelaAcesa() {
   let querAcesa = false;
   const pintarBtn = () => {
     btn.setAttribute('aria-pressed', String(!!trava));
-    btn.textContent = trava ? 'Tela acesa ✓' : 'Manter tela acesa';
+    rotuloBotao(btn, trava ? 'Tela acesa ✓' : 'Manter tela acesa');
   };
   const pedir = async () => {
     try {
       trava = await wl.request('screen');
       trava.addEventListener('release', () => { trava = null; pintarBtn(); });
-    } catch { trava = null; btn.textContent = 'Tela acesa indisponível'; return; }
+    } catch { trava = null; rotuloBotao(btn, 'Tela acesa indisponível', true); setTimeout(() => rotuloBotao(btn, 'Manter tela acesa'), 2500); return; }
     pintarBtn();
   };
   btn.hidden = false;
