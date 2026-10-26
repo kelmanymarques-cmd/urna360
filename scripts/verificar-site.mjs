@@ -22,6 +22,8 @@ await p.locator('#g-evolucao').screenshot({ path: 'site-evolucao.png' }).catch((
 await p.locator('#regioes').screenshot({ path: 'site-regioes.png' }).catch(() => {});
 await p.locator('.mapa-grade').screenshot({ path: 'site-mapa.png' }).catch(() => {});
 await p.locator('#painel-nacional').screenshot({ path: 'site-nacional.png' }).catch(() => {});
+await p.locator('[data-testid="conta-vitoria"]').screenshot({ path: 'site-conta.png' }).catch(() => {});
+console.log('CONTA:', await p.locator('[data-testid="conta-vitoria"]').innerText().catch(() => 'sem cartão'));
 await p.locator('#sec-comparacao').scrollIntoViewIfNeeded().catch(() => {});
 await p.locator('[data-testid="tabela-comparacao"] tbody tr').nth(26).waitFor({ timeout: 20000 }).catch(() => {});
 await p.waitForTimeout(3000);
