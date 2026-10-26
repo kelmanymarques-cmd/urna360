@@ -54,7 +54,7 @@ TSE ──► navegador (consulta a cada 10 s, ETag, timeout, backoff, guarda o 
          └─ src/core (validação EA20/EA14, cálculos, análise) ─ src/ui (painel, mapa, gráficos, imagem)
 Opcional: server/proxy.mjs (lista branca, cache, histórico) para hospedagem com Node.
 ```
-- **Publicação atual:** ramo `site`, servido por raw.githack.com. O `index.html` desse ramo é um **carregador**: ele busca o commit mais recente do ramo pela API do GitHub e carrega o `app.html` e os arquivos daquele commit pelo jsDelivr, que tem endereço imutável. Assim evita o cache velho do githack. Publicar: `scripts/publicar-site.sh <clone-do-ramo-site> "mensagem"`.
+- **Publicação atual:** ramo `site`, servido por raw.githack.com. O `index.html` desse ramo é um **carregador**: ele busca o commit mais recente do ramo pela API do GitHub e carrega o `app.html` e os arquivos daquele commit pelo jsDelivr, que tem endereço imutável. Assim evita o cache velho do githack. Publicação **automática**: a Action `publicar-site` roda a cada push na `main` que mude o app (testa, faz o build e atualiza o ramo `site` como bot). **O ramo `site` é saída de build: nunca abra pull request nem faça merge dele na `main`.** O script `scripts/publicar-site.sh` fica como alternativa manual.
 - **Ramo `historico`:** `historico.json` com cada totalização oficial do arquivo nacional, gravada pela Action `historico`.
 - **Ramo `verificacao`:** evidências das Actions (arquivos reais, cabeçalhos, capturas de tela).
 
@@ -62,6 +62,7 @@ Opcional: server/proxy.mjs (lista branca, cache, histórico) para hospedagem com
 | Workflow | Quando | Para quê |
 |---|---|---|
 | `ci` | push/PR | typecheck, unitários, build com checagem anti-fixture e E2E (desktop/celular/tablet); salva o relatório no ramo `verificacao` se falhar |
+| `publicar-site` | push na `main` (código do app) e manual | testa, faz o build e atualiza o ramo `site` (o link publicado) |
 | `verificar-tse` | push em `src/core` e manual | baixa arquivos reais, testa o normalizador, CORS e fotos |
 | `verificar-site` | manual (URL) | abre o site publicado num Chromium de celular e salva capturas |
 | `historico` | manual | grava a evolução oficial (até ~6 h) |
