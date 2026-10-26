@@ -1,0 +1,17 @@
+name: capturas-readme
+on: { workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  capturar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npx playwright install --with-deps chromium
+      - run: node scripts/capturas-readme.mjs https://raw.githack.com/kelmanymarques-cmd/urna360/site/index.html
+      - run: |
+          mkdir -p /tmp/cap && cp capturas/*.png /tmp/cap/
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          mkdir -p capturas && cp /tmp/cap/* capturas/ && git add -A && git commit -qm "capturas README" && git push -q origin verificacao
