@@ -73,8 +73,20 @@ export function eleicaoDefinida(r: Resultado | null | undefined): Eleicao {
     const d = localizarCandidato(r, c);
     return d && (d.eleitoOficial || /^eleit/i.test(d.situacaoOficial ?? ''));
   });
-  const eleito = marcados.length === 1 ? marcados[0]! : null;
-  if (r.definidoMatematicamente === 'eleito') return { definido: true, motivo: 'matematico', eleito };
+  let eleito = marcados.length === 1 ? marcados[0]! : null;
+  if (r.definidoMatematicamente === 'eleito') {
+    // Observado em 25/10/2026: o TSE publica md="e" sem marcar o candidato (cand.e="n").
+    // Nesse caso, o definido só pode ser quem tem mais votos nominais — e só o nomeamos se a
+    // aritmética confirmar (vantagem maior que todos os eleitores das seções não totalizadas).
+    if (!eleito && marcados.length === 0) {
+      const l = lideranca(r);
+      const R = r.eleitorado.emSecoesNaoTotalizadas;
+      if ((l.estado === 'flavio' || l.estado === 'lula') && R !== null && l.diferencaVotos > R) {
+        eleito = CANDIDATOS.find((c) => c.chave === l.estado) ?? null;
+      }
+    }
+    return { definido: true, motivo: 'matematico', eleito };
+  }
   if (r.totalizacaoFinal && eleito) return { definido: true, motivo: 'totalizacao_final', eleito };
   return { definido: false };
 }

@@ -47,8 +47,9 @@ function renderTopo() {
   const def = eleicaoDefinida(r);
   if (def.definido) {
     const quem = def.eleito ? `${esc(def.eleito.rotulo)} eleito` : 'resultado definido';
+    const cc = consolidacao(r);
     const como = def.motivo === 'matematico'
-      ? 'O TSE indica que o resultado está matematicamente definido. A totalização final ainda não terminou.'
+      ? `O TSE indica que o resultado está matematicamente definido${cc?.garantido ? ` (vantagem de ${num(cc.vantagem)} votos, maior que os ${num(cc.restantesMax)} eleitores que ainda faltam)` : ''}. A totalização final ainda não terminou.`
       : 'Totalização final concluída pelo TSE.';
     const parabens = def.eleito ? `<span class="parabens">Parabéns, ${esc(def.eleito.rotulo)}!</span>` : '';
     av.push(`<div class="aviso eleito" data-testid="aviso-eleito"><strong>TSE: ${quem}</strong>${parabens}<span>${como}</span>
@@ -851,18 +852,20 @@ function verificarEleito() {
   const def = eleicaoDefinida(estado.nacional.dados);
   if (!def.definido) return;
   let jaAvisou = false;
-  try { jaAvisou = localStorage.getItem(CHAVE_AVISO_ELEITO) === '1'; } catch { /* opcional */ }
+  const chaveAviso = `${CHAVE_AVISO_ELEITO}.${def.eleito?.chave ?? 'sem-nome'}`;
+  try { jaAvisou = localStorage.getItem(chaveAviso) === '1'; } catch { /* opcional */ }
   if (!jaAvisou) {
     const nome = def.eleito?.rotulo;
     notificar(nome ? `TSE: ${nome} eleito` : 'TSE: resultado definido',
       nome ? `Parabéns, ${nome}! ${def.motivo === 'matematico' ? 'Resultado matematicamente definido segundo o TSE.' : 'Totalização final concluída.'}` : 'O TSE indicou que o resultado está definido.', 'eleito');
-    try { localStorage.setItem(CHAVE_AVISO_ELEITO, '1'); } catch { /* opcional */ }
+    try { localStorage.setItem(chaveAviso, '1'); } catch { /* opcional */ }
   }
   let jaTocou = false;
-  try { jaTocou = localStorage.getItem(CHAVE_HINO) === '1'; } catch { /* opcional */ }
+  const chaveHino = `${CHAVE_HINO}.${def.eleito?.chave ?? 'sem-nome'}`;
+  try { jaTocou = localStorage.getItem(chaveHino) === '1'; } catch { /* opcional */ }
   if (jaTocou || !alertasLigados) return;
   void tocarHino().then((ok) => {
-    if (ok) { try { localStorage.setItem(CHAVE_HINO, '1'); } catch { /* opcional */ } }
+    if (ok) { try { localStorage.setItem(chaveHino, '1'); } catch { /* opcional */ } }
   });
 }
 

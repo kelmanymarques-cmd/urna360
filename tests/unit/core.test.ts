@@ -274,3 +274,19 @@ describe('conta da vitória (aritmética sobre dados oficiais)', () => {
     expect(consolidacao(null)).toBeNull();
   });
 });
+
+describe('md="e" sem candidato marcado (formato real de 25/10/2026)', () => {
+  const r = (fl: number, lu: number, esnt: number) => {
+    const raw = ea20({ st: 990, ts: 1000, flavio: fl, lula: lu, md: 'e' }) as Record<string, any>;
+    raw.e.esnt = String(esnt);
+    return normalizarResultado(raw, 'br');
+  };
+  it.each([[300, 700, 'Lula'], [700, 300, 'Flávio Bolsonaro']] as const)('nomeia quem tem mais votos quando a vantagem supera os restantes (%i x %i)', (f, l, nome) => {
+    const d = eleicaoDefinida(r(f, l, 100));
+    expect(d.definido && d.eleito?.rotulo).toBe(nome);
+  });
+  it('não nomeia se a aritmética não confirmar', () => {
+    const d = eleicaoDefinida(r(480, 520, 1000));
+    expect(d.definido && d.eleito).toBeNull();
+  });
+});
