@@ -40,7 +40,8 @@ export function htmlAnalise(r: Resumo, ufs: Fluxo[], pendente: boolean): string 
 
   // Destaques gerados só a partir dos números
   const destaques: string[] = [];
-  destaques.push(`A diferença entre os dois mudou <b>${sinal(-n.dMargem).replace('+', '')} votos a favor de ${n.dMargem < 0 ? 'Lula' : 'Flávio Bolsonaro'}</b>: era ${lado(n.margem1)} no 1º turno e ficou ${lado(n.margem2)} no 2º.`);
+  const votosTxt = (v: number) => `${mi(Math.abs(v))}${Math.abs(v) >= 1_000_000 ? ' de votos' : ' votos'}`;
+  destaques.push(`A diferença entre os dois mudou <b>${votosTxt(n.dMargem)} a favor de ${n.dMargem < 0 ? 'Lula' : 'Flávio Bolsonaro'}</b>: era ${lado(n.margem1)} no 1º turno e ficou ${lado(n.margem2)} no 2º.`);
   if (r.rumoFlavio.length === 0 && r.rumoLula.length) destaques.push(`A diferença se moveu na mesma direção (rumo a Lula) em <b>todas as ${r.rumoLula.length} UFs</b>.`);
   else destaques.push(`A diferença se moveu rumo a Lula em ${r.rumoLula.length} UFs e rumo a Flávio em ${r.rumoFlavio.length}.`);
   const t3 = top.slice(0, 3);
@@ -49,7 +50,10 @@ export function htmlAnalise(r: Resumo, ufs: Fluxo[], pendente: boolean): string 
   const reg1 = regioes[0]!, reg2 = regioes[1]!;
   destaques.push(`Por região: ${reg1.nome} (${pct((reg1.dM / n.dMargem) * 100, 0)}) e ${reg2.nome} (${pct((reg2.dM / n.dMargem) * 100, 0)}) concentram a maior parte.`);
   if (viraram.length) destaques.push(`Mudou o candidato com mais votos em: ${viraram.map((u) => `<b>${nomeUF(u.abr)}</b> (${lado(u.margem1)} → ${lado(u.margem2)})`).join(', ')}.`);
-  if (r.flavioPerdeuVotos.length) destaques.push(`Flávio teve <b>menos votos absolutos</b> que no 1º turno em ${r.flavioPerdeuVotos.map((u) => `${nomeUF(u.abr)} (${sinal(u.dF)})`).join(', ')} — estados onde o comparecimento caiu.`);
+  const quedaComp = (lista: Fluxo[]) => lista.length > 0 && lista.every((u) => (u.dComparecimento ?? 0) < 0) ? ' — em todos eles o comparecimento caiu' : '';
+  if (r.flavioPerdeuVotos.length) destaques.push(`Flávio teve <b>menos votos absolutos</b> que no 1º turno em ${r.flavioPerdeuVotos.map((u) => `${nomeUF(u.abr)} (${sinal(u.dF)})`).join(', ')}${quedaComp(r.flavioPerdeuVotos)}.`);
+  const lulaPerdeu = ufs.filter((u) => u.dL < 0);
+  if (lulaPerdeu.length) destaques.push(`Lula teve <b>menos votos absolutos</b> que no 1º turno em ${lulaPerdeu.map((u) => `${nomeUF(u.abr)} (${sinal(u.dL)})`).join(', ')}${quedaComp(lulaPerdeu)}.`);
   if (r.lulaAlemDosOutros.length) destaques.push(`Em ${r.lulaAlemDosOutros.length} UFs, Lula ganhou mais votos do que <b>todos os outros candidatos somaram</b> no 1º turno (maiores: ${r.lulaAlemDosOutros.slice(0, 4).map((u) => nomeUF(u.abr)).join(', ')}). Ali o saldo também veio de comparecimento maior e/ou menos brancos e nulos.`);
   const fFortes = [...ufs].filter((u) => u.fatiaLula !== null).sort((a, b) => (a.fatiaLula ?? 0) - (b.fatiaLula ?? 0)).slice(0, 3);
   if (fFortes.length) destaques.push(`Onde Flávio ficou com a maior fatia do saldo novo: ${fFortes.map((u) => `${nomeUF(u.abr)} (${pct(100 - (u.fatiaLula ?? 0), 0)})`).join(', ')}.`);
