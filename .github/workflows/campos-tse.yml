@@ -1,0 +1,26 @@
+name: campos-tse
+# Mostra os campos de status do arquivo nacional (md, tf, e/st dos candidatos) para conferência.
+on: { workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  campos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sS -m 30 -o /tmp/br.json https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json
+          python3 - > /tmp/campos.txt <<'PY'
+          import json
+          d=json.load(open('/tmp/br.json'))
+          print({k:d.get(k,'<ausente>') for k in ['dg','hg','dt','ht','and','tf','md','mntf','esae','mnae','dv']})
+          print('s', {k:d['s'].get(k) for k in ['ts','st','pst']}, 'e', {k:d['e'].get(k) for k in ['te','est','esnt']})
+          for c in d['carg']:
+            for a in c['agr']:
+              for p in a['par']:
+                for k in p.get('cand',[]): print('cand', {x:k.get(x,'<ausente>') for x in ['n','nmu','e','st','vap','pvap']})
+          print('chaves raiz', sorted(d.keys()))
+          PY
+          cat /tmp/campos.txt
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/campos.txt campos.txt && cp /tmp/br.json br-agora.json && git add -A && git commit -qm "campos TSE" && git push -q origin verificacao
