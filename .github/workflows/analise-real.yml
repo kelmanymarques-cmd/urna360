@@ -1,0 +1,25 @@
+name: analise-real
+on: { workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  analise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: |
+          B=https://resultados.tse.jus.br/oficial/ele2026
+          mkdir -p tests/real-analise/t1 tests/real-analise/t2
+          for a in br zz ac al am ap ba ce df es go ma mg ms mt pa pb pe pi pr rj rn ro rr rs sc se sp to; do
+            curl -sS -m 30 -o tests/real-analise/t1/$a.json "$B/6257/dados/$a/$a-c0001-e006257-u.json"
+            curl -sS -m 30 -o tests/real-analise/t2/$a.json "$B/6258/dados/$a/$a-c0001-e006258-u.json"
+            sleep 0.1
+          done
+      - run: npx vitest run tests/unit/real-analise.test.ts
+      - run: |
+          cp analise-real.json /tmp/
+          git config user.name "urna360-bot"; git config user.email "urna360-bot@users.noreply.github.com"
+          git clean -fdxq && git fetch -q origin verificacao && git checkout -q -f verificacao
+          cp /tmp/analise-real.json . && git add -A && git commit -qm "análise real" && git push -q origin verificacao
