@@ -1,19 +1,19 @@
 interstício do githack: clicando em "Open the page"
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 278, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 277, erro: undefined}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 106, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 128, erro: undefined}
 console: [URNA360] consulta {arquivo: uf-u, total: 28, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 35, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 31, erro: undefined}
-console: [URNA360] consulta {arquivo: uf-u, total: 6, falhas: 0}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 40, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 23, erro: undefined}
+console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
 {
  "url": "https://raw.githack.com/kelmanymarques-cmd/urna360/site/index.html",
  "status": "Apuração em andamento (parcial)",
  "ufs": 27,
  "versaoNova": true,
  "scripts": [
-  "https://cdn.jsdelivr.net/gh/kelmanymarques-cmd/urna360@aeaa95951637492fce679bb99c9f3d5894561738/assets/index-Bszi9UNk.js"
+  "https://cdn.jsdelivr.net/gh/kelmanymarques-cmd/urna360@95e8fde94174b658bb0295ca42e06fb722d9d5f4/assets/index-mHrdKI4Q.js"
  ],
- "respostasTSE": 41,
+ "respostasTSE": 39,
  "amostra": [
   "200 https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json",
   "200 https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-e006258-ab.json",
@@ -21,31 +21,31 @@ console: [URNA360] consulta {arquivo: uf-u, total: 6, falhas: 0}
   "200 https://resultados.tse.jus.br/oficial/ele2026/6258/dados/al/al-c0001-e006258-u.json"
  ]
 }
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 52, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 34, erro: undefined}
-console: [URNA360] consulta {arquivo: uf-u, total: 6, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 155, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 175, erro: undefined}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 20, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 23, erro: undefined}
 console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 40, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 33, erro: undefined}
-console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 67, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 55, erro: undefined}
-console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 39, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 35, erro: undefined}
-console: [URNA360] consulta {arquivo: uf-u, total: 5, falhas: 0}
-console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 56, erro: undefined}
-console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 59, erro: undefined}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 103, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 67, erro: undefined}
 console: [URNA360] consulta {arquivo: uf-u, total: 3, falhas: 0}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 19, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 18, erro: undefined}
+console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 17, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 42, erro: undefined}
+console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 25, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 23, erro: undefined}
+console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
+console: [URNA360] consulta {arquivo: br-u, ok: true, ms: 49, erro: undefined}
+console: [URNA360] consulta {arquivo: br-ab, ok: true, ms: 46, erro: undefined}
+console: [URNA360] consulta {arquivo: uf-u, total: 4, falhas: 0}
 CONTA: sem cartão
-ANALISE: A diferença entre os dois mudou 6,61 milhões votos a favor de Lula: era Flávio +2,22 milhões no 1º turno e ficou Lula +4,38 milhões no 2º.
+ANALISE: A diferença entre os dois mudou 6,65 milhões de votos a favor de Lula: era Flávio +2,22 milhões no 1º turno e ficou Lula +4,43 milhões no 2º.
 A diferença se moveu na mesma direção (rumo a Lula) em todas as 27 UFs.
-São Paulo (1,40 milhões), Minas Gerais (687 mil), Rio de Janeiro (670 mil) somam 42% dessa mudança.
+São Paulo (1,40 milhões), Minas Gerais (696 mil), Rio de Janeiro (670 mil) somam 42% dessa mudança.
 Por região: Sudeste (43%) e Nordeste (38%) concentram a maior parte.
-Mudou o candidato com mais votos em: Minas Gerais (Flávio +589 mil → Lula +99 mil).
-Flávio teve menos votos absolutos que no 1º turno em Acre (−15 mil), Amapá (−14 mil), Amazonas (−12 mil), Roraima (−12 mil), Maranhão (−11 mil), Tocantins (−1 mil) — estados onde o comparecimento caiu.
+Mudou o candidato com mais votos em: Minas Gerais (Flávio +589 mil → Lula +107 mil).
+Flávio teve menos votos absolutos que no 1º turno em Acre (−15 mil), Amapá (−14 mil), Roraima (−12 mil), Maranhão (−9 mil), Amazonas (−2 mil), Tocantins (−1 mil) — em todos eles o comparecimento caiu.
 Em 13 UFs, Lula ganhou mais votos do que todos os outros candidatos somaram no 1º turno (maiores: Bahia, Pernambuco, Ceará, Rio de Janeiro). Ali o saldo também veio de comparecimento maior e/ou menos brancos e nulos.
 Onde Flávio ficou com a maior fatia do saldo novo: Santa Catarina (43%), Goiás (43%), Paraná (40%).
 console: Access to fetch at 'https://resultados.tse.jus.br/oficial/ele2026/6258/fotos/br/280002542548.jpeg' from origin 'https://raw.githack.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
