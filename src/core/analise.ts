@@ -14,12 +14,12 @@ import { confirmados } from './calc';
 
 export interface Fluxo {
   abr: string;
-  f1: number; l1: number; outros1: number; nominais1: number; bn1: number; comp1: number | null;
+  f1: number; l1: number; outros1: number; qtdOutros: number; nominais1: number; bn1: number; comp1: number | null;
   f2: number; l2: number; nominais2: number; bn2: number; comp2: number | null;
   dF: number; dL: number;
   /** Votos que os dois receberam a mais que no 1º turno, somados (= dF + dL). */
   novosParaOsDois: number;
-  /** Fatia desse saldo que foi para Lula (0–100). null se o saldo for ≤ 0. */
+  /** Fatia desse saldo que foi para Lula (0–100). null se algum dos dois perdeu votos (fatia não faz sentido). */
   fatiaLula: number | null;
   dComparecimento: number | null;
   dBrancosNulos: number;
@@ -43,10 +43,10 @@ export function fluxo(abr: string, r1: Resultado | null, r2: Resultado | null): 
   const novos = dF + dL;
   return {
     abr,
-    f1, l1, outros1: Math.max(0, n1 - f1 - l1), nominais1: n1, bn1, comp1: r1.eleitorado.comparecimento,
+    f1, l1, outros1: Math.max(0, n1 - f1 - l1), qtdOutros: Math.max(0, r1.candidatos.length - 2), nominais1: n1, bn1, comp1: r1.eleitorado.comparecimento,
     f2, l2, nominais2: n2, bn2, comp2: r2.eleitorado.comparecimento,
     dF, dL, novosParaOsDois: novos,
-    fatiaLula: novos > 0 ? (dL / novos) * 100 : null,
+    fatiaLula: novos > 0 && dF >= 0 && dL >= 0 ? (dL / novos) * 100 : null,
     dComparecimento: r1.eleitorado.comparecimento != null && r2.eleitorado.comparecimento != null ? r2.eleitorado.comparecimento - r1.eleitorado.comparecimento : null,
     dBrancosNulos: bn2 - bn1,
     margem1: f1 - l1, margem2: f2 - l2, dMargem: (f2 - l2) - (f1 - l1),

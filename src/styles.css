@@ -249,6 +249,27 @@ tr.mudou-lider td { background: #F6C4451A; }
 .cv-status.ok { color: var(--ok); }
 .cv-cenario .rotulo { display: block; margin-bottom: 2px; }
 
+/* Análise 1º → 2º turno */
+#analise { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+#analise > * { min-width: 0; }
+.an-grade { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+.an-bloco { display: grid; gap: 8px; align-content: start; }
+.an-bloco h3 { font-size: 1rem; }
+.an-dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: .92rem; }
+.an-dl dt { color: var(--texto-2); }
+.an-dl dd { margin: 0; text-align: right; }
+.an-divisao { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--trilha); }
+.an-lista { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: .93rem; }
+.an-regioes { display: grid; gap: 6px; }
+.an-reg { display: grid; grid-template-columns: 7.5em 1fr auto; gap: 8px; align-items: center; font-size: .9rem; }
+.an-celula { display: inline-block; width: 90px; height: 10px; background: var(--trilha); border-radius: 99px; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+.an-reg .an-celula { width: 100%; }
+.an-barra { display: block; height: 100%; }
+.an-barra.l { background: var(--lula); }
+.an-barra.f { background: var(--flavio); }
+.an-limite { max-width: 90ch; }
+@media (max-width: 480px) { .an-reg { grid-template-columns: 1fr; } }
+
 /* Mapa */
 .camadas { display: flex; flex-wrap: wrap; gap: 8px; }
 .camadas button { font: inherit; font-size: .9rem; color: var(--texto); background: var(--fundo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 40px; }

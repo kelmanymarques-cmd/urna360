@@ -8,6 +8,8 @@ import { CAMADAS_METRICAS, CORES_CANDIDATOS, FAIXAS_VANTAGEM, TONS, type IdCamad
 import { dataHora, esc, hora, num, pctTxt, TRACO } from './ui/format';
 import { montarMapa, pintarMapa } from './ui/mapa';
 import { compartilharImagem, gerarImagemParcial } from './ui/imagem';
+import { fluxo, resumir } from './core/analise';
+import { htmlAnalise } from './ui/analiseView';
 import { htmlComparacao, linhaComparacao, ordenar, UFS_COMPARACAO, type Base1T, type Coluna } from './ui/comparacao';
 import { acharMunicipio, compartilhar, municipiosDaUF, primeiroTurno, resultadoMunicipio, resumo1T, textoCompartilhar } from './ui/extras';
 
@@ -538,6 +540,13 @@ function renderComparacao() {
   const nacional = linhaComparacao('br', cmp.t1.get('br') ?? null, estado.nacional.dados, cmp.base);
   const linhas = ordenar(UFS_COMPARACAO.map((u) => linhaComparacao(u, cmp.t1.get(u) ?? null, resUF(u), cmp.base)), cmp.col, cmp.desc);
   $('comparacao').innerHTML = htmlComparacao({ nacional, linhas, base: cmp.base, col: cmp.col, desc: cmp.desc, carregando: cmp.pendentes, falhas: cmp.falhas });
+  renderAnalise();
+}
+function renderAnalise() {
+  const nac = fluxo('br', cmp.t1.get('br') ?? null, estado.nacional.dados);
+  const ufs = UFS_COMPARACAO.map((u) => fluxo(u, cmp.t1.get(u) ?? null, resUF(u))).filter((x): x is NonNullable<typeof x> => !!x);
+  if (!nac || ufs.length === 0) return;
+  $('analise').innerHTML = htmlAnalise(resumir(nac, ufs), ufs, cmp.pendentes > 0);
 }
 
 function renderTudo() {
@@ -616,6 +625,7 @@ function iniciar() {
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((ents) => { if (ents.some((x) => x.isIntersecting)) { iniciarComparacao(); io.disconnect(); } }, { rootMargin: '600px' });
     io.observe($('sec-comparacao'));
+    io.observe($('sec-analise'));
   } else iniciarComparacao();
   void carregarHistoricoRemoto();
   setInterval(() => { if (document.visibilityState === 'visible') void carregarHistoricoRemoto(); }, 120_000);

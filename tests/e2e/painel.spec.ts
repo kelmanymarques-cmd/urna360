@@ -328,6 +328,12 @@ test('comparação 1º × 2º turno: tabela, mudança de liderança, base e orde
   });
   expect(larg.t).toBeGreaterThan(larg.c * 0.95);
   await page.locator('#sec-comparacao').screenshot({ path: `test-results/comparacao-${test.info().project.name}.png` });
+  // análise 1º → 2º turno
+  await page.locator('#sec-analise').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('analise-destaques')).toContainText('A diferença entre os dois mudou');
+  await expect(page.getByTestId('tabela-analise').locator('tbody tr')).toHaveCount(27);
+  await expect(page.getByTestId('analise-destaques')).toContainText('Pernambuco');
+  await page.locator('#sec-analise').screenshot({ path: `test-results/analise-${test.info().project.name}.png` });
 });
 
 test('conta da vitória: falta para garantir e cenário', async ({ page }) => {

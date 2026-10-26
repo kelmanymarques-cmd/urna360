@@ -28,6 +28,10 @@ await p.locator('#sec-comparacao').scrollIntoViewIfNeeded().catch(() => {});
 await p.locator('[data-testid="tabela-comparacao"] tbody tr').nth(26).waitFor({ timeout: 20000 }).catch(() => {});
 await p.waitForTimeout(3000);
 await p.locator('#sec-comparacao').screenshot({ path: 'site-comparacao.png' }).catch(() => {});
+await p.locator('#sec-analise').scrollIntoViewIfNeeded().catch(() => {});
+await p.locator('[data-testid="analise-destaques"]').waitFor({ timeout: 20000 }).catch(() => {});
+await p.locator('#sec-analise').screenshot({ path: 'site-analise.png' }).catch(() => {});
+console.log('ANALISE:', await p.locator('[data-testid="analise-destaques"]').innerText().catch(() => 'sem análise'));
 // Gera a imagem de compartilhamento com os dados reais (sem abrir o menu do sistema).
 try {
   await p.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));
