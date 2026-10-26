@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { carimbo, inteiro, pct, percentual } from '../../src/core/parse';
 import { ErroNormalizacao, normalizarAcompanhamento, normalizarResultado } from '../../src/core/normalize';
-import { eleicaoDefinida, lideranca, ritmo, somarRegiao, statusApuracao } from '../../src/core/calc';
+import { consolidacao, eleicaoDefinida, lideranca, ritmo, somarRegiao, statusApuracao } from '../../src/core/calc';
 import { CAMADAS_METRICAS, TONS, pintar, tomVantagem } from '../../src/ui/camadas';
 import { ea14, ea20 } from '../fixtures/ea20';
 
@@ -241,5 +241,36 @@ describe('tons pela vantagem', () => {
       expect(tomVantagem(k, 15)).toBe(TONS[k][2]);
       expect(tomVantagem(k, 40)).toBe(TONS[k][3]);
     }
+  });
+});
+
+describe('conta da vitória (aritmética sobre dados oficiais)', () => {
+  const r = (o: Parameters<typeof ea20>[0], esnt: number, est: number) => {
+    const raw = ea20({ st: 50, ts: 100, ...o }) as Record<string, any>;
+    raw.e.esnt = String(esnt);
+    raw.e.est = String(est);
+    return normalizarResultado(raw, 'br');
+  };
+  it('não garantido: vantagem menor que os eleitores restantes', () => {
+    const c = consolidacao(r({ flavio: 600, lula: 400 }, 1000, 1250))!;
+    expect(c.lider).toBe('flavio');
+    expect(c.vantagem).toBe(200);
+    expect(c.garantido).toBe(false);
+    expect(c.faltaParaGarantir).toBe(801);
+    // taxa = 1000 nominais / 1250 eleitores = 0,8 → V = 800 votos restantes
+    expect(c.cenario!.votosRestantes).toBeCloseTo(800);
+    expect(c.cenario!.outroPrecisa).toBeCloseTo(62.5); // (800+200)/2/800
+    expect(c.cenario!.liderPrecisa).toBeCloseTo(37.5); // (800−200)/2/800
+  });
+  it('garantido: vantagem maior que todos os eleitores restantes (pior caso)', () => {
+    const c = consolidacao(r({ flavio: 300, lula: 900 }, 500, 1500))!;
+    expect(c.lider).toBe('lula');
+    expect(c.garantido).toBe(true);
+    expect(c.faltaParaGarantir).toBe(0);
+    expect(c.cenario!.outroPrecisa).toBeGreaterThan(100);
+  });
+  it('sem dados ou empate: não calcula', () => {
+    expect(consolidacao(r({ flavio: 5, lula: 5 }, 10, 20))).toBeNull();
+    expect(consolidacao(null)).toBeNull();
   });
 });

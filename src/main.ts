@@ -1,6 +1,6 @@
 import './styles.css';
 import { ABRANGENCIA_EXTERIOR, CANDIDATOS, FONTE, NOMES_UF, REGIOES, UFS, URL_HISTORICO, urlFoto, type UF } from './config';
-import { confirmados, eleicaoDefinida, lideranca, ritmo, ROTULO_STATUS, somarRegiao, statusApuracao } from './core/calc';
+import { confirmados, consolidacao, eleicaoDefinida, lideranca, ritmo, ROTULO_STATUS, somarRegiao, statusApuracao } from './core/calc';
 import { carimbo } from './core/parse';
 import type { Resultado } from './core/types';
 import { Store, type Estado, type Entrada, type PontoHistorico } from './data/store';
@@ -129,6 +129,7 @@ function renderNacional() {
     </div>
     <div class="cands">${cards}</div>
     ${textoVantagem(r, 'nacional')}
+    ${htmlConsolidacao(r)}
     <div class="indicadores">
       ${ind('Votos válidos', num(v.validos), 'Votos nominais dos candidatos', 'validos')}
       ${ind('Brancos', r.votosDisponiveis ? `${num(v.brancos)} · ${pctTxt(v.pctBrancos)}` : TRACO, '% sobre o total de votos · barra: 0 a 25%', 'brancos', r.votosDisponiveis ? v.pctBrancos : null)}
@@ -154,6 +155,23 @@ function textoVantagem(r: Resultado | null, onde: 'nacional' | 'uf'): string {
   return onde === 'nacional'
     ? `<p class="vantagem" data-vivo="vantagem" data-testid="vantagem">${txt} até agora${r?.eleitorado.emSecoesNaoTotalizadas ? ` · ainda há <b class="num">${milhoes(r.eleitorado.emSecoesNaoTotalizadas, 'eleitores')}</b> em seções não totalizadas` : ''} <span class="nota">(apuração parcial — não é resultado final)</span></p>`
     : txt;
+}
+
+function htmlConsolidacao(r: Resultado): string {
+  if (r.totalizacaoFinal || eleicaoDefinida(r).definido) return '';
+  const c = consolidacao(r);
+  if (!c) return '';
+  const nome = (k: string) => CANDIDATOS.find((x) => x.chave === k)!.rotulo;
+  const f1 = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const garantia = c.garantido
+    ? `<p class="cv-status ok" data-testid="cv-garantido"><b>Pela conta, a ordem não pode mais mudar:</b> a vantagem de ${esc(nome(c.lider))} (${num(c.vantagem)} votos) já é maior que todos os ${num(c.restantesMax)} eleitores das seções ainda não totalizadas. Aguardando a confirmação oficial do TSE.</p>`
+    : `<p class="cv-status" data-testid="cv-falta">Para a vitória de ${esc(nome(c.lider))} ficar <b>matematicamente garantida</b>, a vantagem precisa passar de <b class="num">${num(c.restantesMax)}</b> votos (todos os eleitores que ainda faltam). Hoje ela é <b class="num">${num(c.vantagem)}</b>: faltam <b class="num">${num(c.faltaParaGarantir)}</b> votos de vantagem.</p>`;
+  const cen = c.cenario && !c.garantido && c.cenario.outroPrecisa !== null
+    ? `<p class="cv-cenario" data-testid="cv-cenario"><span class="rotulo">Cenário (estimativa)</span> Se as seções restantes tiverem a mesma taxa de votos válidos por eleitor vista até agora (${f1(c.cenario.taxaNominal * 100)}%), ainda entram cerca de <b class="num">${milhoes(Math.round(c.cenario.votosRestantes))}</b>.
+        Para virar, ${esc(nome(c.outro))} precisaria de <b class="num">${c.cenario.outroPrecisa > 100 ? 'mais de 100%' : `${f1(c.cenario.outroPrecisa)}%`}</b> desses votos${c.cenario.outroPrecisa > 100 ? ' (impossível nesse cenário)' : ''}; ${esc(nome(c.lider))} mantém a frente com mais de <b class="num">${f1(c.cenario.liderPrecisa ?? 0)}%</b>.</p>`
+    : '';
+  return `<div class="cartao conta-vitoria" data-testid="conta-vitoria"><h3>Conta da vitória</h3>${garantia}${cen}
+    <p class="nota">Aritmética sobre os números oficiais do TSE. A garantia usa o pior caso possível (todos os eleitores restantes votando no outro). O cenário é estimativa. O resultado oficial só é declarado pelo TSE.</p></div>`;
 }
 
 function milhoes(n: number | null | undefined, unidade = 'votos'): string {

@@ -330,6 +330,20 @@ test('comparação 1º × 2º turno: tabela, mudança de liderança, base e orde
   await page.locator('#sec-comparacao').screenshot({ path: `test-results/comparacao-${test.info().project.name}.png` });
 });
 
+test('conta da vitória: falta para garantir e cenário', async ({ page }) => {
+  await page.route('**/api/tse/**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('-ab.json')) return route.fulfill({ json: ea14([]) });
+    const m = /dados\/([a-z]{2})\//.exec(url)?.[1] ?? 'br';
+    const raw = ea20({ abr: m, st: 50, ts: 100, flavio: 600, lula: 400 }) as Record<string, any>;
+    raw.e.esnt = '1000'; raw.e.est = '1250';
+    return route.fulfill({ json: raw });
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('cv-falta')).toContainText('faltam 801 votos de vantagem');
+  await expect(page.getByTestId('cv-cenario')).toContainText('62,5%');
+});
+
 test('avisa quando o TSE está há mais de 15 min sem nova totalização', async ({ page }) => {
   await fonte(page, () => ({ st: 10, flavio: 1, lula: 2 }), { st: 10, flavio: 1, lula: 2, dt: '25/10/2026', ht: '17:06:27' });
   await page.goto('/');

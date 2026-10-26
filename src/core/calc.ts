@@ -122,3 +122,48 @@ export function ritmo(pontos: { ms: number; pst: number }[], janelaMs = 10 * 60_
   if (minutos <= 0 || minutos > 30) return null;
   return { pp: fim.pst - ini.pst, minutos };
 }
+
+export interface Consolidacao {
+  lider: ChaveCandidato;
+  outro: ChaveCandidato;
+  /** Vantagem atual em votos (oficial). */
+  vantagem: number;
+  /** Teto absoluto de votos que ainda podem entrar: eleitores em seções não totalizadas (esnt). */
+  restantesMax: number;
+  /** Garantia matemática: vantagem > teto (nem todos os restantes votando no outro virariam). */
+  garantido: boolean;
+  /** Quanto a vantagem ainda precisa crescer para ficar irreversível (0 se garantido). */
+  faltaParaGarantir: number;
+  /** Cenário (estimativa): votos nominais que ainda devem entrar, pela taxa observada nas seções já totalizadas. */
+  cenario: { taxaNominal: number; votosRestantes: number; outroPrecisa: number | null; liderPrecisa: number | null } | null;
+}
+
+/**
+ * Conta da vitória — só aritmética sobre dados oficiais.
+ * 1) Garantia matemática: o pior caso possível é TODOS os eleitores das seções não totalizadas
+ *    votarem no outro candidato. Se a vantagem atual for maior que esse teto, a ordem não pode mais mudar.
+ * 2) Cenário (rotulado como estimativa): supõe que as seções restantes terão a mesma taxa de votos
+ *    nominais por eleitor observada até agora e calcula a fatia dos votos restantes que cada um precisaria.
+ */
+export function consolidacao(r: Resultado | null | undefined): Consolidacao | null {
+  const l = lideranca(r);
+  if (!r || (l.estado !== 'flavio' && l.estado !== 'lula')) return null;
+  const R = r.eleitorado.emSecoesNaoTotalizadas;
+  if (R === null) return null;
+  const vantagem = l.diferencaVotos;
+  const garantido = vantagem > R;
+  const outro: ChaveCandidato = l.estado === 'flavio' ? 'lula' : 'flavio';
+  const est = r.eleitorado.emSecoesTotalizadas;
+  const nom = r.votos.nominais;
+  let cenario: Consolidacao['cenario'] = null;
+  if (est && nom && est > 0 && R > 0) {
+    const taxa = nom / est;
+    const V = R * taxa;
+    // O outro precisa de x tal que x − (V − x) > vantagem  →  x > (V + vantagem) / 2
+    const outroPrecisa = V > 0 ? ((V + vantagem) / 2 / V) * 100 : null;
+    // O líder mantém a frente se tiver mais que (V − vantagem) / 2 dos restantes
+    const liderPrecisa = V > 0 ? Math.max(0, ((V - vantagem) / 2 / V) * 100) : null;
+    cenario = { taxaNominal: taxa, votosRestantes: V, outroPrecisa, liderPrecisa };
+  }
+  return { lider: l.estado, outro, vantagem, restantesMax: R, garantido, faltaParaGarantir: garantido ? 0 : R - vantagem + 1, cenario };
+}
